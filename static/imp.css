@@ -269,6 +269,13 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
 #tools-tab { flex:1; overflow:hidden; }
 #tools-editor { flex:1; overflow-y:auto; padding:16px 24px; }
 
+/* --- origin badges --- */
+.origin-badge { font-size:9px; font-weight:600; padding:1px 5px; border-radius:3px;
+  text-transform:uppercase; letter-spacing:0.03em; margin-left:6px; }
+.origin-git { background:#238636; color:#fff; }
+.origin-pr { background:#d29922; color:#fff; }
+.origin-local { background:var(--border); color:var(--muted); }
+
 /* --- chat [P] button --- */
 .chat-p-btn { float:right; background:none; border:1px solid var(--border); color:var(--muted);
   border-radius:3px; font-size:10px; font-weight:700; padding:0 4px; cursor:pointer;

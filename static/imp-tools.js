@@ -74,7 +74,7 @@ async function loadToolsPanel() {
             </select></div>
             <textarea class="wf-readme-edit" id="tool-desc-edit" style="min-height:80px;">${(t.description || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>`;
         }
-        return imp.item({id: `tool-${group}-${t.name}`, name: t.name, buttons: toolBtns, body: toolBody});
+        return imp.item({id: `tool-${group}-${t.name}`, name: t.name, buttons: toolBtns, body: toolBody, origin: t.origin});
       }).join('');
 
       bodyHtml += imp.items(toolsHtml);
