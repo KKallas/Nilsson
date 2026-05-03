@@ -78,6 +78,26 @@ Data format for tables: `{"columns": [...], "data": [[...], ...]}`
 - `python -m renderers.helpers --template gantt` — render charts
 - `python pipeline/estimate_dates.py` — fill missing dates
 
+## Creating tools and workflows
+
+When the user asks to "turn this into a tool" or "make a tool for this":
+
+1. **Write the tool file** using the Write tool at `tools/<group>/<name>.py`.
+   Follow existing conventions: shebang, docstring (Inputs/Process/Output), argparse, exit codes.
+2. **Publish it** by running:
+   `python tools/imp/make_tool.py --group <group> --name <name> --title "<title>"`
+   This creates a branch, commits, pushes, and opens a GitHub issue + PR automatically.
+
+When the user asks to "turn this into a workflow":
+
+1. **Write the workflow files** using Write:
+   - `workflows/<name>/README.md` — description of what the workflow does
+   - `workflows/<name>/step_1_<desc>.py` — each step has `def run(context): ...` returning `{"ok": bool, "output": str}`
+2. **Publish it** by running:
+   `python tools/imp/make_workflow.py --name <name> --title "<title>"`
+
+Do NOT manually run git commands for this — use the make_tool/make_workflow scripts.
+
 ## Bash fallback
 
 If no tool script covers what you need, use `gh` CLI directly:

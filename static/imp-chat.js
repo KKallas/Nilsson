@@ -346,10 +346,9 @@ async function loadChats() {
       const el = document.createElement('div');
       el.className = `chat-item${c.id === currentChatId ? ' active' : ''}`;
       const dateStr = c.created_at ? new Date(c.created_at).toLocaleString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
-      const branchDot = c.branch ? '<span class="branch-dot" title="' + c.branch + '">\u2387</span>' : '';
       const safeTitle = (c.title || 'New chat').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-      const pBtn = c.turn_count > 0 ? `<button class="chat-p-btn" onclick="promptFromChat(event, '${c.id}', '${safeTitle}')" title="Create workflow from this chat">P</button>` : '';
-      el.innerHTML = `<div class="chat-title">${branchDot}${c.title || 'New chat'}</div><div class="chat-date">${dateStr}${pBtn}</div>`;
+      const pBtn = c.turn_count > 0 ? `<button class="chat-p-btn" onclick="promptFromChat(event, '${c.id}', '${safeTitle}')" title="Create tool or workflow from this chat">P</button>` : '';
+      el.innerHTML = `<div class="chat-title">${c.title || 'New chat'}</div><div class="chat-date">${dateStr}${pBtn}</div>`;
       el.onclick = () => loadChat(c.id, i === 0);
       list.appendChild(el);
     });
@@ -422,11 +421,7 @@ async function loadChat(id, isActive) {
     msgs.innerHTML = '';
     const dateStr = chat.created_at ? new Date(chat.created_at).toLocaleString() : '';
     const title = chat.title || 'Chat';
-    let headerHtml = `<div style="text-align:center;padding:16px 0 8px;"><strong>${title}</strong><br><span style="font-size:11px;color:var(--muted);">${dateStr}</span></div>`;
-    if (chat.branch) {
-      headerHtml += `<div class="branch-banner"><span class="branch-label">\u2387 ${chat.branch}</span><button class="wf-start" onclick="mergeBranch()">Merge</button><button class="wf-btn" style="color:#da3633;border-color:#da3633;" onclick="discardBranch()">Discard</button></div>`;
-    }
-    msgs.innerHTML = headerHtml;
+    msgs.innerHTML = `<div style="text-align:center;padding:16px 0 8px;"><strong>${title}</strong><br><span style="font-size:11px;color:var(--muted);">${dateStr}</span></div>`;
     (chat.turns || []).forEach(t => {
       const role = t.role === 'user' ? 'user' : 'agent';
       const content = role === 'agent' ? renderTurnFull(t) : t.content;
@@ -454,18 +449,19 @@ async function newChat() {
 
 async function deleteChat() {
   if (!currentChatId) return;
-  // Check if chat has a branch — offer merge/discard
   try {
     const res = await fetch(`${API}/api/chats/${currentChatId}`);
     const chat = await res.json();
-    if (chat.branch) {
-      const choice = prompt('This chat has branch "' + chat.branch + '".\nType "merge" to merge into main, or "discard" to delete without merging.\nLeave empty to cancel.');
+    const hasTurns = (chat.turns || []).length > 0;
+    if (hasTurns) {
+      const choice = prompt('Delete chat "' + (chat.title || 'Untitled') + '"?\n\nType "issue" to create a GitHub issue from this chat first.\nType "delete" to delete without saving.\nLeave empty to cancel.');
       if (!choice) return;
-      if (choice.toLowerCase() === 'merge') {
-        await fetch(`${API}/api/chats/${currentChatId}/merge`, { method: 'POST' });
-      } else if (choice.toLowerCase() === 'discard') {
-        await fetch(`${API}/api/chats/${currentChatId}/discard`, { method: 'POST' });
-      } else { return; }
+      if (choice.toLowerCase() === 'issue') {
+        const r = await fetch(`${API}/api/chats/${currentChatId}/create-issue`, { method: 'POST' });
+        const data = await r.json();
+        if (data.url) alert('Issue created: ' + data.url);
+        else if (data.error) { alert('Issue creation failed: ' + data.error); return; }
+      } else if (choice.toLowerCase() !== 'delete') { return; }
     } else {
       if (!confirm('Delete this chat?')) return;
     }
@@ -476,39 +472,11 @@ async function deleteChat() {
   } catch (e) { console.error('deleteChat failed:', e); }
 }
 
-async function mergeBranch() {
-  if (!currentChatId) return;
-  if (!confirm('Merge this branch into main?')) return;
-  try {
-    const res = await fetch(`${API}/api/chats/${currentChatId}/merge`, { method: 'POST' });
-    const data = await res.json();
-    if (data.merged) {
-      loadChat(currentChatId, true);
-    } else {
-      alert('Merge failed: ' + (data.error || 'unknown error'));
-    }
-  } catch (e) { alert('Merge failed: ' + e); }
-}
-
-async function discardBranch() {
-  if (!currentChatId) return;
-  if (!confirm('Discard this branch? All uncommitted changes will be lost.')) return;
-  try {
-    const res = await fetch(`${API}/api/chats/${currentChatId}/discard`, { method: 'POST' });
-    const data = await res.json();
-    if (data.discarded) {
-      loadChat(currentChatId, true);
-    } else {
-      alert('Discard failed: ' + (data.error || 'unknown error'));
-    }
-  } catch (e) { alert('Discard failed: ' + e); }
-}
-
 function promptFromChat(ev, chatId, chatTitle) {
-  // Open a new chat with instructions to create a workflow from this chat's conversation
   ev.stopPropagation();
-  const presetText = 'Review the conversation in chat "' + chatTitle + '" (id: ' + chatId + ') and create a reusable workflow from it. Extract the key steps, identify which tools were used, and create appropriate workflow step files under workflows/. If any custom tools are needed, create those too under tools/.';
-  openChatWithContext([], '', presetText, null, 'Workflow from: ' + chatTitle);
+  const chatFile = '.imp/chats/' + chatId + '/chat.json';
+  const presetText = 'Review the attached chat and create a reusable tool or workflow from it. Use make_tool.py or make_workflow.py to finalize.';
+  openChatWithContext([chatFile], '', presetText, null, 'Productize: ' + chatTitle);
 }
 
 async function openChatWithContext(files, instructions, userPrompt, sourceLock, title) {
