@@ -38,7 +38,15 @@ Run `python tools/imp/list_tools.py --group render --verbose` to see available r
 
 ## Queue
 
-The Queue tab holds work items awaiting user action. To add items to the internal queue, use the queue API — do NOT create GitHub issues for internal tasks. Queue items are for things like "review this PR" or "approve this workflow step".
+The Queue tab shows pending work items that need the user's attention. Each item has a title, detail text, and action buttons the user can click to resolve it. Items are grouped by category.
+
+This is Imp's internal task list — NOT GitHub issues. Use it for reminders, review requests, approvals, or any item the user should act on.
+
+Queue API (this server, same port):
+- `GET /api/queue` — list pending items
+- `POST /api/queue` — add item (JSON body: `title`, `detail_html`, `tool` for category)
+- `POST /api/queue/{id}/action` — resolve an item
+- `DELETE /api/queue/{id}` — remove an item
 
 ## Creating tools and workflows
 
