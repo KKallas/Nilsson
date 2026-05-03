@@ -17,11 +17,11 @@ CHAT_DIR = Path(".imp/chats")
 LOGS_DIR = Path("public/logs")
 
 
-def _collect_files(directory: Path) -> list[Path]:
-    """Return all files in *directory* (non-recursive)."""
+def _collect_entries(directory: Path) -> list[Path]:
+    """Return all files and subdirectories in *directory*."""
     if not directory.is_dir():
         return []
-    return sorted(f for f in directory.iterdir() if f.is_file())
+    return sorted(directory.iterdir())
 
 
 def main() -> int:
@@ -38,29 +38,33 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    targets: dict[str, list[Path]] = {"chats": _collect_files(CHAT_DIR)}
+    targets: dict[str, list[Path]] = {"chats": _collect_entries(CHAT_DIR)}
     if args.include_logs:
-        targets["logs"] = _collect_files(LOGS_DIR)
+        targets["logs"] = _collect_entries(LOGS_DIR)
 
     total = 0
-    for label, files in targets.items():
-        if not files:
+    for label, entries in targets.items():
+        if not entries:
             print(f"{label}: nothing to clean")
             continue
 
+        import shutil
         action = "would delete" if args.dry_run else "deleted"
-        for f in files:
+        for entry in entries:
             if not args.dry_run:
-                f.unlink()
-            print(f"  {action}: {f}")
-        print(f"{label}: {action} {len(files)} file(s)")
-        total += len(files)
+                if entry.is_dir():
+                    shutil.rmtree(entry)
+                else:
+                    entry.unlink()
+            print(f"  {action}: {entry}")
+        print(f"{label}: {action} {len(entries)} item(s)")
+        total += len(entries)
 
     if total == 0:
         print("Nothing to clean up.")
     else:
         verb = "Would delete" if args.dry_run else "Deleted"
-        print(f"\n{verb} {total} file(s) total.")
+        print(f"\n{verb} {total} item(s) total.")
 
     return 0
 

@@ -224,9 +224,10 @@ function connectWs() {
         const desc = entry ? entry.desc : msg.name;
         const tag = entry ? entry.tag : '';
         const formattedOutput = msg.output ? formatStepOutput(msg.output) : '<pre>(no output)</pre>';
+        const argsLine = entry && entry.args ? `<div style="padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);">${msg.name}(${formatArgs(entry.args)})</div>` : '';
         if (tag) {
           const oldBlock = `<details class="tool-block running ${tag}"><summary>⏳ ${desc}...</summary><pre>Running...</pre></details>`;
-          const newBlock = `<details class="tool-block ${msg.status} ${tag}"><summary>${icon} ${desc}${dur}</summary><div class="wf-step-output">${formattedOutput}</div></details>`;
+          const newBlock = `<details class="tool-block ${msg.status} ${tag}"><summary>${icon} ${desc}${dur}</summary>${argsLine}<div class="wf-step-output">${formattedOutput}</div></details>`;
           agentText = agentText.replace(oldBlock, newBlock);
         }
         renderAgentBody();
@@ -262,6 +263,7 @@ function connectWs() {
         setWorking(false);
         setStatus('');
         scrollBottom();
+        loadChats();
         if (_chatSourceLock && _chatSourceLock.chatId === currentChatId) {
           unlockChatSource();
         }
