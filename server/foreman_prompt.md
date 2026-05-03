@@ -52,21 +52,29 @@ Queue API at `{{IMP_BASE_URL}}`:
 
 When the user asks to "turn this into a tool" or "make a tool for this":
 
-1. **Write the tool file** using the Write tool at `tools/<group>/<name>.py`.
+1. **Write the tool file** using Write at `tools/<group>/<name>.py`.
    Follow existing conventions: shebang, docstring (Inputs/Process/Output), argparse, exit codes.
-2. **Publish it** by running:
-   `python tools/imp/make_tool.py --group <group> --name <name> --title "<title>"`
-   This creates a branch, commits, pushes, and opens a GitHub issue + PR automatically.
+2. **Register it** locally: `python tools/imp/make_tool.py --group <group> --name <name>`
+   This validates the file and reloads the tool list so it's immediately available.
 
 When the user asks to "turn this into a workflow":
 
 1. **Write the workflow files** using Write:
-   - `workflows/<name>/README.md` — description of what the workflow does
+   - `workflows/<name>/README.md` — description
    - `workflows/<name>/step_1_<desc>.py` — each step has `def run(context): ...` returning `{"ok": bool, "output": str}`
-2. **Publish it** by running:
-   `python tools/imp/make_workflow.py --name <name> --title "<title>"`
+2. **Register it** locally: `python tools/imp/make_workflow.py --name <name>`
 
-Do NOT manually run git commands for this — use the make_tool/make_workflow scripts.
+## Publishing to GitHub
+
+To push a local tool or workflow to GitHub as an issue + PR:
+
+`python tools/imp/publish_pr.py --path <dir> --title "..."`
+
+Examples:
+- `python tools/imp/publish_pr.py --path tools/imp/ --title "Add queue test tool"`
+- `python tools/imp/publish_pr.py --path workflows/daily_report/ --title "Add daily report workflow"`
+
+Only publish when the user asks. Tools and workflows work locally without publishing.
 
 ## Bash fallback
 
