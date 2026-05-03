@@ -42,7 +42,7 @@ The Queue tab shows pending work items that need the user's attention. Each item
 
 This is Imp's internal task list — NOT GitHub issues. Use it for reminders, review requests, approvals, or any item the user should act on.
 
-Queue API (this server, same port):
+Queue API at `{{IMP_BASE_URL}}`:
 - `GET /api/queue` — list pending items
 - `POST /api/queue` — add item (JSON body: `title`, `detail_html`, `tool` for category)
 - `POST /api/queue/{id}/action` — resolve an item
