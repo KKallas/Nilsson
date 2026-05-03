@@ -135,37 +135,29 @@ var openIssues = {open_json};
 var newIssues = {new_json};
 var closedIssues = {closed_json};
 
-// Ideal line: 3 points — start open, end open, projected to zero if trending down
+// Ideal line: only 2 or 3 real points, nulls everywhere else
 var startVal = openIssues[0] || 0;
 var endVal = openIssues[openIssues.length - 1] || 0;
 var n = labels.length;
 var slope = (endVal - startVal) / Math.max(n - 1, 1);
-var ideal = [];
+var ideal = new Array(n).fill(null);
+ideal[0] = startVal;
+ideal[n - 1] = endVal;
 
 if (slope < 0 && endVal > 0) {{
-  // Trending down: extend the line until it hits zero
+  // Trending down: add one projected zero point
   var extraDays = Math.ceil(endVal / Math.abs(slope));
-  var totalLen = n + extraDays;
-  for (var i = 0; i < totalLen; i++) {{
-    var v = startVal + slope * i;
-    ideal.push(Math.round(Math.max(0, v) * 100) / 100);
-  }}
-  // Pad other datasets and labels with nulls for the projected days
   for (var j = 0; j < extraDays; j++) {{
-    openIssues.push(null);
-    newIssues.push(null);
-    closedIssues.push(null);
-    // Generate projected date labels
     var last = new Date(labels[labels.length - 1] + " 2026");
     last.setDate(last.getDate() + j + 1);
     var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     labels.push(months[last.getMonth()] + " " + String(last.getDate()).padStart(2, "0"));
+    openIssues.push(null);
+    newIssues.push(null);
+    closedIssues.push(null);
+    ideal.push(null);
   }}
-}} else {{
-  // Not trending down: straight line from first to last, no extension
-  for (var i = 0; i < n; i++) {{
-    ideal.push(Math.round((startVal + slope * i) * 100) / 100);
-  }}
+  ideal[ideal.length - 1] = 0;
 }}
 
 new frappe.Chart("#chart", {{
