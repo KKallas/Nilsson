@@ -74,13 +74,11 @@ async function loadToolsPanel() {
             </select></div>
             <textarea class="wf-readme-edit" id="tool-desc-edit" style="min-height:80px;">${(t.description || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>`;
         }
-        return imp.item({id: `tool-${group}-${t.name}`, name: t.name, buttons: toolBtns, body: toolBody});
+        return imp.item({id: `tool-${group}-${t.name}`, name: t.name, buttons: toolBtns, body: toolBody, origin: t.origin});
       }).join('');
 
       bodyHtml += imp.items(toolsHtml);
-      const origins = tools.map(t => t.origin).filter(Boolean);
-      const groupOrigin = origins.includes('local') ? 'local' : origins.includes('pr') ? 'pr' : origins.length ? 'git' : undefined;
-      html += imp.card({id: `tg-${group}`, name: checkbox + group, meta: `${tools.length} tools`, buttons: groupBtns, body: bodyHtml, cls: isActive ? '' : 'inactive', origin: groupOrigin});
+      html += imp.card({id: `tg-${group}`, name: checkbox + group, meta: `${tools.length} tools`, buttons: groupBtns, body: bodyHtml, cls: isActive ? '' : 'inactive'});
     }
     el.innerHTML = html;
 

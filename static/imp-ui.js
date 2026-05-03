@@ -78,6 +78,7 @@ const imp = {
     return `<details class="wf-step-item${cls}" data-id="${opts.id}"${open}>
       <summary style="display:flex;align-items:center;gap:6px;">
         <span style="flex:1;">${opts.name}</span>
+        ${opts.origin ? `<span class="origin-badge origin-${opts.origin}">${opts.origin}</span>` : ''}
         ${(opts.buttons || []).join(' ')}
       </summary>
       <div class="wf-step-output" style="padding:8px 10px;">${opts.body || ''}</div>
