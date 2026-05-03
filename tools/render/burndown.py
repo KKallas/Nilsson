@@ -135,12 +135,37 @@ var openIssues = {open_json};
 var newIssues = {new_json};
 var closedIssues = {closed_json};
 
-// Ideal line: straight from first-day open count to zero at end
+// Ideal line: 3 points — start open, end open, projected to zero if trending down
 var startVal = openIssues[0] || 0;
+var endVal = openIssues[openIssues.length - 1] || 0;
 var n = labels.length;
+var slope = (endVal - startVal) / Math.max(n - 1, 1);
 var ideal = [];
-for (var i = 0; i < n; i++) {{
-  ideal.push(Math.round((startVal * (1 - i / Math.max(n - 1, 1))) * 100) / 100);
+
+if (slope < 0 && endVal > 0) {{
+  // Trending down: extend the line until it hits zero
+  var extraDays = Math.ceil(endVal / Math.abs(slope));
+  var totalLen = n + extraDays;
+  for (var i = 0; i < totalLen; i++) {{
+    var v = startVal + slope * i;
+    ideal.push(Math.round(Math.max(0, v) * 100) / 100);
+  }}
+  // Pad other datasets and labels with nulls for the projected days
+  for (var j = 0; j < extraDays; j++) {{
+    openIssues.push(null);
+    newIssues.push(null);
+    closedIssues.push(null);
+    // Generate projected date labels
+    var last = new Date(labels[labels.length - 1] + " 2026");
+    last.setDate(last.getDate() + j + 1);
+    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    labels.push(months[last.getMonth()] + " " + String(last.getDate()).padStart(2, "0"));
+  }}
+}} else {{
+  // Not trending down: straight line from first to last, no extension
+  for (var i = 0; i < n; i++) {{
+    ideal.push(Math.round((startVal + slope * i) * 100) / 100);
+  }}
 }}
 
 new frappe.Chart("#chart", {{
@@ -156,10 +181,10 @@ new frappe.Chart("#chart", {{
   type: "axis-mixed",
   height: 300,
   colors: ["#58a6ff", "#4fc3f7", "#81c784", "#6b7280"],
-  lineOptions: {{ regionFill: 0, dotSize: 4, hideLine: 0, hideDots: 0 }},
+  lineOptions: {{ regionFill: 0, dotSize: 3, hideLine: 0, hideDots: 0, spline: 1 }},
   axisOptions: {{ xAxisMode: "tick", xIsSeries: 1 }},
   tooltipOptions: {{
-    formatTooltipY: function(d) {{ return d + " issues"; }}
+    formatTooltipY: function(d) {{ return d !== null ? d + " issues" : "—"; }}
   }}
 }});
 </script>
@@ -169,7 +194,7 @@ new frappe.Chart("#chart", {{
 
 def build_html(stats: dict, exclude: set[int]) -> str:
     """Generate the full HTML string from daily stats."""
-    title = "Issue Burndown (Bar) \u2014 " + stats["labels"][0] + " to " + stats["labels"][-1]
+    title = "Issue Burndown \u2014 " + stats["labels"][0] + " to " + stats["labels"][-1]
     nums = sorted(exclude)
     subtitle = ("Excluding issues: " + ", ".join(f"#{n}" for n in nums)) if nums else "All issues included"
 
