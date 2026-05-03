@@ -94,7 +94,8 @@ async function loadWorkflows() {
         status: {cls: statusClass, icon: sIcon, text: wf.status},
         buttons: wfBtns, body: bodyHtml,
         open: wf.status !== 'idle',
-        cls: isWfActive ? '' : 'inactive'
+        cls: isWfActive ? '' : 'inactive',
+        origin: wf.origin
       });
     }
     el.innerHTML = html;

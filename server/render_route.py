@@ -59,6 +59,59 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])
 
 
 
+# ── git origin helpers ─────────────────────────────────────────────
+
+import subprocess as _subprocess
+
+# Cache of open PR branches — refreshed on each list call
+_pr_branches_cache: set[str] = set()
+_pr_cache_mtime: float = 0
+
+
+def _refresh_pr_branches() -> set[str]:
+    """Fetch the set of branch names with open PRs (cached 60s)."""
+    import time
+    global _pr_branches_cache, _pr_cache_mtime
+    now = time.time()
+    if now - _pr_cache_mtime < 60:
+        return _pr_branches_cache
+    try:
+        result = _subprocess.run(
+            ["gh", "pr", "list", "--json", "headRefName", "--limit", "100"],
+            capture_output=True, text=True, cwd=str(_ROOT), timeout=10,
+        )
+        if result.returncode == 0:
+            import json as _json
+            _pr_branches_cache = {
+                pr["headRefName"] for pr in _json.loads(result.stdout)
+            }
+        _pr_cache_mtime = now
+    except Exception:
+        pass
+    return _pr_branches_cache
+
+
+def _git_origin(path: str) -> str:
+    """Return 'git', 'pr', or 'local' for a file/dir path relative to ROOT."""
+    # Check if path has uncommitted changes (untracked or modified)
+    result = _subprocess.run(
+        ["git", "status", "--porcelain", "--", path],
+        capture_output=True, text=True, cwd=str(_ROOT), timeout=5,
+    )
+    if result.returncode != 0:
+        return "local"
+    status_lines = result.stdout.strip()
+    if status_lines:
+        # Has uncommitted changes — check if there's an open PR for it
+        pr_branches = _refresh_pr_branches()
+        for branch in pr_branches:
+            if path.replace("/", "-") in branch or path.split("/")[-1] in branch:
+                return "pr"
+        return "local"
+    # Clean and tracked — it's on git
+    return "git"
+
+
 # ── helpers ─────────────────────────────────────────────────────────
 
 def _render_template(renderer_name: str, context: dict[str, Any]) -> str:
@@ -569,6 +622,7 @@ async def list_workflows():
             "status": runner_state.get("status", "idle") if name in runners else (last_run.get("status", "idle") if last_run else "idle"),
             "current_step": runner_state.get("current_step", 0),
             "ran_at": ran_at,
+            "origin": _git_origin(f"workflows/{name}/"),
         })
 
     import tools as _tools
@@ -1005,6 +1059,7 @@ async def list_tools():
                 "name": exe["name"],
                 "description": desc,
                 "args": args,
+                "origin": _git_origin(f"tools/{group_name}/{exe['name']}.py"),
             })
     return result
 

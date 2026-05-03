@@ -78,7 +78,9 @@ async function loadToolsPanel() {
       }).join('');
 
       bodyHtml += imp.items(toolsHtml);
-      html += imp.card({id: `tg-${group}`, name: checkbox + group, meta: `${tools.length} tools`, buttons: groupBtns, body: bodyHtml, cls: isActive ? '' : 'inactive'});
+      const origins = tools.map(t => t.origin).filter(Boolean);
+      const groupOrigin = origins.includes('local') ? 'local' : origins.includes('pr') ? 'pr' : origins.length ? 'git' : undefined;
+      html += imp.card({id: `tg-${group}`, name: checkbox + group, meta: `${tools.length} tools`, buttons: groupBtns, body: bodyHtml, cls: isActive ? '' : 'inactive', origin: groupOrigin});
     }
     el.innerHTML = html;
 

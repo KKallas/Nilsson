@@ -59,6 +59,7 @@ const imp = {
     return `<details class="wf-item${cls}" data-id="${opts.id}"${open}>
       <summary>
         <span class="wf-item-name">${opts.name}</span>
+        ${opts.origin ? `<span class="origin-badge origin-${opts.origin}">${opts.origin}</span>` : ''}
         <span class="wf-item-meta">${opts.meta || ''}</span>
         ${statusHtml}
         ${(opts.buttons || []).join(' ')}
