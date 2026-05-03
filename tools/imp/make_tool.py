@@ -136,8 +136,11 @@ def main():
     if result.stdout.strip():
         print(f"PR: {result.stdout.strip()}")
 
-    # Switch back to main
+    # Switch back to main, restore files so the tool stays locally available
+    tool_dir = f"tools/{args.group}/"
     run(["git", "checkout", "main"])
+    run(["git", "checkout", branch, "--", tool_dir])
+    run(["git", "reset", "HEAD", tool_dir])
 
     print("Done.")
     return 0

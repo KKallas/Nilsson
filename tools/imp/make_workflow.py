@@ -137,8 +137,11 @@ def main():
     if result.stdout.strip():
         print(f"PR: {result.stdout.strip()}")
 
-    # Switch back to main
+    # Switch back to main, restore files so the workflow stays locally available
+    wf_dir = f"workflows/{args.name}/"
     run(["git", "checkout", "main"])
+    run(["git", "checkout", branch, "--", wf_dir])
+    run(["git", "reset", "HEAD", wf_dir])
 
     print("Done.")
     return 0
