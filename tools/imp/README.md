@@ -8,6 +8,8 @@ Local tools for managing the Imp project workspace.
 |---|---|---|
 | `clean_chats.py` | Delete chat history and execution logs | `--include-logs`, `--dry-run` |
 | `list_tools.py` | List all available tool scripts | `--group`, `--verbose` |
+| `make_tool.py` | Create GitHub issue + PR for a new tool | `--group`, `--name`, `--title` |
+| `make_workflow.py` | Create GitHub issue + PR for a new workflow | `--name`, `--title` |
 
 ## Usage
 
@@ -32,4 +34,10 @@ python tools/imp/list_tools.py --group github
 
 # List all tools with descriptions
 python tools/imp/list_tools.py --verbose
+
+# Create a tool (after writing the .py file)
+python tools/imp/make_tool.py --group github --name my_tool --title "Add my_tool"
+
+# Create a workflow (after writing step files)
+python tools/imp/make_workflow.py --name daily_report --title "Add daily report workflow"
 ```

@@ -51,11 +51,17 @@ def _load_system_prompt() -> str:
 
 def _build_system_prompt() -> str:
     """Load from file + append auto-discovered tool list."""
+    import os
+
     base = ""
     if _PROMPT_FILE.exists():
         base = _PROMPT_FILE.read_text()
     else:
         base = "You are Foreman, an AI project manager."
+
+    # Inject runtime values
+    port = os.environ.get("RENDER_PORT", "8421")
+    base = base.replace("{{IMP_BASE_URL}}", f"http://127.0.0.1:{port}")
 
     # Append available tools so Claude tries them before raw Bash
     try:
