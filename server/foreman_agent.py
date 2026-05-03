@@ -112,8 +112,8 @@ def _make_security_hook(confirm: Optional[ConfirmFn] = None):
                     desc = f"Edit {file_path}"
                 else:
                     content = tool_input.get("content", "")
-                    line_count = len(content.splitlines())
-                    preview = f"New file: {line_count} lines, {len(content)} chars"
+                    lines = content.splitlines()
+                    preview = "@@ -0,0 +1," + str(len(lines)) + " @@\n" + "\n".join("+" + l for l in lines)
                     desc = f"Write {file_path}"
                 approved = await confirm(tool_name, desc, preview)
                 if not approved:
