@@ -26,6 +26,16 @@ Tools and workflows are dynamic — they're discovered from disk at startup. The
 Run a tool: `python tools/<group>/<name>.py <args>`
 Run a workflow: `python tools/imp/run_workflow.py <name> --wait`
 
+## Dashboard
+
+The chat UI has a dashboard drawer on the right side. Render tools push charts and HTML widgets there. Use tools from the `render` group to push content:
+- Bar/line/pie charts: data format `{"labels": [...], "datasets": [{"name": "series", "values": [...]}]}`
+- Tables: data format `{"columns": [...], "data": [[...], ...]}`
+- Custom HTML: any HTML string
+- Mermaid diagrams: use fenced ```mermaid``` blocks in your response (rendered automatically)
+
+Run `python tools/imp/list_tools.py --group render --verbose` to see available render tools.
+
 ## Queue
 
 The Queue tab holds work items awaiting user action. To add items to the internal queue, use the queue API — do NOT create GitHub issues for internal tasks. Queue items are for things like "review this PR" or "approve this workflow step".
