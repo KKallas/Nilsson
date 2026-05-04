@@ -115,6 +115,25 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
 #send-btn:disabled { opacity:0.4; cursor:not-allowed; }
 #stop-btn { background:#da3633; color:#fff; display:none; }
 
+/* --- snapshot row --- */
+#snapshot-row { display:flex; justify-content:flex-end; margin-top:6px; }
+#snapshot-btn { background:none; border:1px solid var(--border); color:var(--muted);
+  border-radius:6px; padding:4px 12px; cursor:pointer; font-size:12px; font-weight:500; }
+#snapshot-btn:hover { color:var(--fg); border-color:var(--accent); }
+#snapshot-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+/* --- snapshot blocks (inline in chat) --- */
+.snapshot-block { margin:8px 0; padding:10px 14px; border:1px solid #1f6feb44;
+  border-radius:8px; background:#0d1117; display:flex; align-items:center; gap:10px; }
+.snapshot-block .snap-icon { font-size:18px; flex-shrink:0; }
+.snapshot-block .snap-info { flex:1; min-width:0; }
+.snapshot-block .snap-name { font-weight:600; font-size:13px; color:var(--fg); }
+.snapshot-block .snap-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.snapshot-block .snap-actions { display:flex; gap:6px; flex-shrink:0; }
+.snapshot-block .snap-actions button { background:none; border:1px solid var(--border);
+  color:var(--muted); border-radius:4px; padding:3px 10px; cursor:pointer; font-size:11px; }
+.snapshot-block .snap-actions button:hover { color:var(--fg); border-color:var(--accent); }
+
 /* --- status bar --- */
 #status { height:var(--status-h); padding:4px 24px; font-size:12px; color:var(--muted);
   background:#010409; border-top:1px solid var(--border); display:flex; align-items:center; }

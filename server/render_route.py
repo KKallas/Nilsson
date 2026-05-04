@@ -325,6 +325,8 @@ async def list_chats():
         }
         if r.get("branch"):
             item["branch"] = r["branch"]
+        if r.get("snapshot_count"):
+            item["snapshot_count"] = r["snapshot_count"]
         result.append(item)
     return result
 
@@ -412,8 +414,236 @@ async def get_chat(chat_id: str):
 @app.delete("/api/chats/{chat_id}")
 async def delete_chat(chat_id: str):
     from server import chat_history
+
+    session = chat_history.load_session(chat_id)
+    if session is not None and session.branch:
+        # Clean up the snapshot branch
+        import asyncio as _aio
+        try:
+            await _aio.create_subprocess_exec(
+                "git", "branch", "-D", session.branch,
+                cwd=str(_ROOT), stdout=_aio.subprocess.DEVNULL,
+                stderr=_aio.subprocess.DEVNULL,
+            )
+        except Exception:
+            pass
+
     ok = chat_history.delete_session(chat_id)
     return {"deleted": ok}
+
+
+# ── snapshot API ──────────────────────────────────────────────────
+
+
+@app.get("/api/chats/{chat_id}/snapshots/dirty")
+async def snapshot_dirty_check(chat_id: str):
+    """Check if the working tree has uncommitted changes."""
+    import asyncio as _aio
+
+    proc = await _aio.create_subprocess_exec(
+        "git", "status", "--porcelain",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    stdout, _ = await _aio.wait_for(proc.communicate(), timeout=10)
+    lines = [l for l in stdout.decode().strip().splitlines() if l.strip()]
+    return {"dirty": len(lines) > 0, "changed_files": len(lines)}
+
+
+@app.get("/api/chats/{chat_id}/snapshots")
+async def list_snapshots(chat_id: str):
+    """List all snapshots for a chat."""
+    from server import chat_history
+
+    session = chat_history.load_session(chat_id)
+    if session is None:
+        return Response("chat not found", status_code=404)
+    return {"snapshots": session.snapshots, "branch": session.branch}
+
+
+@app.post("/api/chats/{chat_id}/snapshots")
+async def create_snapshot(chat_id: str, request: Request):
+    """Create a snapshot (git commit on a chat-specific branch)."""
+    import asyncio as _aio
+    from server import chat_history
+
+    data = await request.json()
+    name = (data.get("name") or "").strip()
+    if not name:
+        return Response("name required", status_code=400)
+
+    session = chat_history.load_session(chat_id)
+    if session is None:
+        return Response("chat not found", status_code=404)
+
+    # Check for changes
+    proc = await _aio.create_subprocess_exec(
+        "git", "status", "--porcelain",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    stdout, _ = await _aio.wait_for(proc.communicate(), timeout=10)
+    if not stdout.decode().strip():
+        return {"error": "no_changes", "message": "No changes to snapshot"}
+
+    # First snapshot: create branch from current HEAD
+    if not session.branch:
+        branch_name = f"imp/{chat_id}"
+        proc = await _aio.create_subprocess_exec(
+            "git", "checkout", "-b", branch_name,
+            cwd=str(_ROOT),
+            stdout=_aio.subprocess.PIPE,
+            stderr=_aio.subprocess.PIPE,
+        )
+        _, stderr = await _aio.wait_for(proc.communicate(), timeout=10)
+        if proc.returncode != 0:
+            return {"error": "branch_failed", "message": stderr.decode().strip()}
+        session.branch = branch_name
+    else:
+        # Make sure we're on the right branch
+        proc = await _aio.create_subprocess_exec(
+            "git", "rev-parse", "--abbrev-ref", "HEAD",
+            cwd=str(_ROOT),
+            stdout=_aio.subprocess.PIPE,
+            stderr=_aio.subprocess.PIPE,
+        )
+        stdout, _ = await _aio.wait_for(proc.communicate(), timeout=10)
+        current_branch = stdout.decode().strip()
+        if current_branch != session.branch:
+            proc = await _aio.create_subprocess_exec(
+                "git", "checkout", session.branch,
+                cwd=str(_ROOT),
+                stdout=_aio.subprocess.PIPE,
+                stderr=_aio.subprocess.PIPE,
+            )
+            _, stderr = await _aio.wait_for(proc.communicate(), timeout=10)
+            if proc.returncode != 0:
+                return {"error": "checkout_failed", "message": stderr.decode().strip()}
+
+    # Stage all changes
+    proc = await _aio.create_subprocess_exec(
+        "git", "add", "-A",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    await _aio.wait_for(proc.communicate(), timeout=10)
+
+    # Commit
+    commit_msg = f"snapshot: {name}"
+    proc = await _aio.create_subprocess_exec(
+        "git", "commit", "-m", commit_msg,
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    stdout, stderr = await _aio.wait_for(proc.communicate(), timeout=10)
+    if proc.returncode != 0:
+        return {"error": "commit_failed", "message": stderr.decode().strip()}
+
+    # Get the commit hash
+    proc = await _aio.create_subprocess_exec(
+        "git", "rev-parse", "HEAD",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    stdout, _ = await _aio.wait_for(proc.communicate(), timeout=10)
+    commit_hash = stdout.decode().strip()
+
+    # Get list of changed files in this commit
+    proc = await _aio.create_subprocess_exec(
+        "git", "diff", "--name-only", "HEAD~1", "HEAD",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    stdout, _ = await _aio.wait_for(proc.communicate(), timeout=10)
+    changed_files = [f for f in stdout.decode().strip().splitlines() if f.strip()]
+
+    snapshot = {
+        "name": name,
+        "commit_hash": commit_hash,
+        "timestamp": chat_history._utcnow_iso(),
+        "changed_files": changed_files,
+    }
+    session.snapshots.append(snapshot)
+    chat_history.save_session(session)
+
+    return {"ok": True, "snapshot": snapshot, "index": len(session.snapshots) - 1}
+
+
+@app.post("/api/chats/{chat_id}/snapshots/{index}/restore")
+async def restore_snapshot(chat_id: str, index: int):
+    """Restore working tree to a snapshot's commit."""
+    import asyncio as _aio
+    from server import chat_history
+
+    session = chat_history.load_session(chat_id)
+    if session is None:
+        return Response("chat not found", status_code=404)
+
+    if index < 0 or index >= len(session.snapshots):
+        return Response("snapshot not found", status_code=404)
+
+    snapshot = session.snapshots[index]
+    commit_hash = snapshot["commit_hash"]
+
+    # Check for uncommitted changes
+    proc = await _aio.create_subprocess_exec(
+        "git", "status", "--porcelain",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    stdout, _ = await _aio.wait_for(proc.communicate(), timeout=10)
+    if stdout.decode().strip():
+        return {"warning": "dirty", "message": "You have unsaved changes that will be lost. Create a snapshot first?"}
+
+    # Reset to the snapshot commit
+    proc = await _aio.create_subprocess_exec(
+        "git", "checkout", commit_hash, "--", ".",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    _, stderr = await _aio.wait_for(proc.communicate(), timeout=10)
+    if proc.returncode != 0:
+        return {"error": "restore_failed", "message": stderr.decode().strip()}
+
+    return {"ok": True, "restored_to": snapshot["name"], "commit": commit_hash}
+
+
+@app.post("/api/chats/{chat_id}/snapshots/{index}/restore-force")
+async def restore_snapshot_force(chat_id: str, index: int):
+    """Force restore — discard unsaved changes and restore to snapshot."""
+    import asyncio as _aio
+    from server import chat_history
+
+    session = chat_history.load_session(chat_id)
+    if session is None:
+        return Response("chat not found", status_code=404)
+
+    if index < 0 or index >= len(session.snapshots):
+        return Response("snapshot not found", status_code=404)
+
+    snapshot = session.snapshots[index]
+    commit_hash = snapshot["commit_hash"]
+
+    # Discard all changes and restore
+    proc = await _aio.create_subprocess_exec(
+        "git", "checkout", commit_hash, "--", ".",
+        cwd=str(_ROOT),
+        stdout=_aio.subprocess.PIPE,
+        stderr=_aio.subprocess.PIPE,
+    )
+    _, stderr = await _aio.wait_for(proc.communicate(), timeout=10)
+    if proc.returncode != 0:
+        return {"error": "restore_failed", "message": stderr.decode().strip()}
+
+    return {"ok": True, "restored_to": snapshot["name"], "commit": commit_hash}
 
 
 @app.post("/api/chats/{chat_id}/create-issue")
