@@ -309,6 +309,32 @@ function connectWs() {
         setStatus(`<a href="#" style="color:var(--accent)" onclick="event.preventDefault();var b=document.querySelector('[data-confirm-id=\\'${confirmId}\\']');if(b)b.scrollIntoView({behavior:'smooth',block:'center'})">Waiting for approval (click to view)</a>`);
         break;
       }
+
+      case 'ask_apikey': {
+        if (activeTab !== 'chat') switchTab('chat');
+        ensureAgentMsg();
+        const envVar = msg.env_var;
+        const promptHtml = renderMd(msg.prompt || `Paste your **${envVar}**:`);
+        agentText += `\n\n<div class="apikey-block" data-apikey-env="${envVar}">` +
+          `<div style="padding:8px 12px;">${promptHtml}</div>` +
+          `<div style="padding:0 12px 10px;display:flex;gap:8px;align-items:center;">` +
+          `<input type="password" id="apikey-input-${envVar}" placeholder="Paste key here" ` +
+          `style="flex:1;padding:6px 10px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px;font-family:monospace;font-size:13px;" ` +
+          `onkeydown="if(event.key==='Enter'){event.preventDefault();respondApiKey('${envVar}');}">` +
+          `<button class="wf-start" onclick="respondApiKey('${envVar}')">Save</button>` +
+          `<button class="wf-btn" style="color:#da3633;border-color:#da3633;" onclick="respondApiKey('${envVar}',true)">Cancel</button>` +
+          `</div></div>\n\n`;
+        renderAgentBody();
+        const keyBlock = document.querySelector(`[data-apikey-env="${envVar}"]`);
+        if (keyBlock) keyBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Focus the input after render
+        setTimeout(function() {
+          var inp = document.getElementById('apikey-input-' + envVar);
+          if (inp) inp.focus();
+        }, 100);
+        setStatus('Waiting for API key');
+        break;
+      }
     }
   };
 }
@@ -325,6 +351,18 @@ function respondConfirm(id, approved) {
     new RegExp('(data-confirm-id="' + id + '"[\\s\\S]*?<summary>)\\u23f3'),
     '$1' + icon
   );
+  renderAgentBody();
+}
+
+function respondApiKey(envVar, cancel) {
+  var input = document.getElementById('apikey-input-' + envVar);
+  var value = cancel ? '' : (input ? input.value : '');
+  if (ws) ws.send(JSON.stringify({type: 'apikey_response', env_var: envVar, value: value}));
+  // Replace input with confirmation
+  var icon = cancel ? '\u274c' : '\uD83D\uDD12';
+  var label = cancel ? 'Cancelled' : 'Key saved to OS keychain';
+  var btnRe = new RegExp('<div style="padding:0 12px 10px;display:flex[\\s\\S]*?</div></div>');
+  agentText = agentText.replace(btnRe, '<div style="padding:4px 12px 10px;font-size:11px;color:var(--muted);">' + icon + ' ' + label + '</div></div>');
   renderAgentBody();
 }
 

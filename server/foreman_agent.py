@@ -74,7 +74,29 @@ def _build_system_prompt() -> str:
     except Exception:
         pass
 
+    # For non-Claude models: reinforce that tools are Bash commands, not functions
+    llm_cfg = _load_llm_config()
+    if llm_cfg.get("base_url"):
+        base += "\n\n" + _NON_CLAUDE_TOOL_ADDENDUM
+
     return base
+
+
+_NON_CLAUDE_TOOL_ADDENDUM = """\
+## CRITICAL: How to use tools
+
+You have access to these built-in tools: **Bash**, **Read**, **Write**, **Edit**, **Glob**, **Grep**.
+
+To run any tool script listed above, you MUST use the **Bash** tool with the full command. For example:
+
+- To list tools: use Bash with command `python3 tools/imp/list_tools.py --verbose`
+- To check LLM backend: use Bash with command `python3 tools/llm/current.py`
+- To run any tool: use Bash with command `python3 tools/<group>/<script>.py --args`
+
+Do NOT call tool scripts as function names. They are NOT native functions. \
+They are Python scripts that must be executed via the Bash tool. \
+Always use `python3 tools/...` as a Bash command.
+"""
 
 
 def reload_prompt() -> str:
@@ -105,6 +127,18 @@ def _load_llm_config() -> dict[str, Any]:
     return cfg.get("llm") or {}
 
 
+def _resolve_api_key(api_key_env: str) -> str:
+    """Look up an API key from env, then OS keystore. Returns '' if not found."""
+    from . import keystore
+
+    value = os.environ.get(api_key_env, "")
+    if value:
+        return value
+    # Fall back to OS keychain
+    stored = keystore.get(api_key_env)
+    return stored or ""
+
+
 def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
     """Translate the ``llm`` config block into kwargs for ClaudeAgentOptions.
 
@@ -123,7 +157,7 @@ def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
     if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
         # OpenRouter (and similar proxies) use ANTHROPIC_AUTH_TOKEN
         # and require ANTHROPIC_API_KEY to be explicitly empty.
-        key_value = os.environ.get(api_key_env, "")
+        key_value = _resolve_api_key(api_key_env)
         if key_value:
             env["ANTHROPIC_AUTH_TOKEN"] = key_value
             env["ANTHROPIC_API_KEY"] = ""
@@ -219,6 +253,7 @@ def _make_security_hook(confirm: Optional[ConfirmFn] = None):
 
 SayFn = Callable[[str], Awaitable[None]]
 AskFn = Callable[[str], Awaitable[Optional[str]]]
+AskKeyFn = Callable[[str, str], Awaitable[Optional[str]]]  # (env_var, prompt) → key
 ThinkingFn = Callable[[str], Any]
 ChartFn = Callable[[dict[str, Any]], Awaitable[None]]
 
@@ -241,6 +276,7 @@ async def dispatch(
     history: Optional[list[Any]] = None,
     turn_ui: Optional[TurnUI] = None,
     confirm: Optional[ConfirmFn] = None,
+    ask_key: Optional[AskKeyFn] = None,
 ) -> str:
     """Run one Foreman conversation turn.
 
@@ -271,6 +307,31 @@ async def dispatch(
     tracker = _ToolTracker(ui) if turn_ui is not None else None
 
     llm_cfg = _load_llm_config()
+
+    # If a custom backend needs an API key and we don't have one,
+    # prompt the user via the chat UI and store in OS keychain.
+    api_key_env = llm_cfg.get("api_key_env", "")
+    if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
+        if not _resolve_api_key(api_key_env):
+            if ask_key:
+                provider = llm_cfg.get("base_url", "custom provider")
+                key = await ask_key(
+                    api_key_env,
+                    f"Paste your **{api_key_env}** for {provider}:",
+                )
+                if key:
+                    from . import keystore
+                    keystore.set(api_key_env, key)
+                else:
+                    await say("No API key provided. Cannot reach the LLM backend.")
+                    return ""
+            else:
+                await say(
+                    f"**{api_key_env}** is not set. "
+                    f"Export it in your shell or use `python tools/llm/set_key.py`."
+                )
+                return ""
+
     llm_kwargs = _llm_sdk_kwargs(llm_cfg)
     # Extended thinking is Anthropic-specific; disable for third-party backends
     # to avoid SDK crashes on non-standard response formats.

@@ -6,3 +6,4 @@ uvicorn
 websockets
 fastapi
 jinja2
+keyring>=25
