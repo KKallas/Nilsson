@@ -25,7 +25,8 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-UPSTREAM_JSON = ROOT / ".imp" / "upstream.json"
+PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
+UPSTREAM_JSON = PROJECT_DIR / ".imp" / "upstream.json"
 
 DEFAULT_REPO = "KKallas/Imp"
 DEFAULT_CORE_PATHS = [

@@ -32,8 +32,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Iterable, Optional
 
+from .paths import PROJECT_DIR
+
 ROOT = Path(__file__).resolve().parent.parent
-CHATS_DIR = ROOT / ".imp" / "chats"
+CHATS_DIR = PROJECT_DIR / ".imp" / "chats"
 
 # History cap — oldest turns drop first when either is exceeded.
 # A "turn" here is one user OR one assistant entry (not a pair).

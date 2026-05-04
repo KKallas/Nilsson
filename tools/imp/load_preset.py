@@ -10,16 +10,18 @@ Process: Copies missing workflows and tools from the preset into the
 Output: Prints what was installed and activated."""
 import argparse
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PRESETS_DIR = ROOT / ".imp" / "presets"
+PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
+PRESETS_DIR = PROJECT_DIR / ".imp" / "presets"
 
 
 def _load_config() -> dict:
-    cfg_file = ROOT / ".imp" / "config.json"
+    cfg_file = PROJECT_DIR / ".imp" / "config.json"
     if cfg_file.exists():
         try:
             return json.loads(cfg_file.read_text())
@@ -29,7 +31,7 @@ def _load_config() -> dict:
 
 
 def _save_config(cfg: dict) -> None:
-    cfg_file = ROOT / ".imp" / "config.json"
+    cfg_file = PROJECT_DIR / ".imp" / "config.json"
     cfg_file.parent.mkdir(parents=True, exist_ok=True)
     cfg_file.write_text(json.dumps(cfg, indent=2))
 

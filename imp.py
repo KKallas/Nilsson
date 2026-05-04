@@ -32,7 +32,7 @@ REQUIRED_PYTHON = (3, 11)
 ROOT = Path(__file__).resolve().parent
 VENV_DIR = ROOT / ".venv"
 REQUIREMENTS_FILE = ROOT / "requirements.txt"
-STATE_DIR = ROOT / ".imp"
+STATE_DIR = Path.cwd().resolve() / ".imp"
 HOST = "127.0.0.1"
 PORT = 8421
 
@@ -183,6 +183,14 @@ def start_server() -> None:
     print(f"\nStarting Imp at http://{HOST}:{PORT}", flush=True)
     print("Ctrl+C to stop.\n", flush=True)
 
+    # Tell the server where the project lives. When Imp is a subfolder
+    # inside a project, CWD is the project root and ROOT is the Imp
+    # subfolder. When developing Imp itself, they're the same.
+    project_dir = Path.cwd().resolve()
+    os.environ["IMP_PROJECT_DIR"] = str(project_dir)
+    print(f"  IMP_DIR:     {ROOT}", flush=True)
+    print(f"  PROJECT_DIR: {project_dir}", flush=True)
+
     os.execvp(
         sys.executable,
         [
@@ -192,30 +200,17 @@ def start_server() -> None:
             "--host", HOST,
             "--port", str(PORT),
             "--log-level", "warning",
+            "--app-dir", str(ROOT),
         ],
     )
 
 
 def reset() -> None:
-    """Delete .imp/, .venv/, and .git/ (if origin is KKallas/Imp) so the next run starts fresh."""
+    """Delete .imp/ and .venv/ so the next run starts fresh."""
     for d in (STATE_DIR, VENV_DIR):
         if d.exists():
             print(f"Removing {d.name}/...", flush=True)
             shutil.rmtree(d)
-    git_dir = ROOT / ".git"
-    if git_dir.exists():
-        try:
-            result = subprocess.run(
-                ["git", "remote", "get-url", "origin"],
-                capture_output=True, text=True, cwd=ROOT,
-            )
-            if result.returncode == 0 and "KKallas/Imp" in result.stdout:
-                print("Removing .git/ (origin is KKallas/Imp)...", flush=True)
-                shutil.rmtree(git_dir)
-            else:
-                print(".git/ kept (origin is not KKallas/Imp).", flush=True)
-        except Exception:
-            print(".git/ kept (could not check remote).", flush=True)
     print("Reset complete. Run `python imp.py` to start fresh.", flush=True)
 
 

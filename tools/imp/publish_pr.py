@@ -16,22 +16,24 @@ Output: Prints issue URL and PR URL."""
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
 
 
 def run(cmd, **kwargs):
     """Run a command, return CompletedProcess."""
-    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT), **kwargs)
+    return subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_DIR), **kwargs)
 
 
 def get_repo():
     """Read repo from .imp/config.json, fall back to git remote."""
-    cfg = ROOT / ".imp" / "config.json"
+    cfg = PROJECT_DIR / ".imp" / "config.json"
     if cfg.exists():
         try:
             data = json.loads(cfg.read_text())

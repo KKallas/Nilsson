@@ -8,12 +8,14 @@ Inputs:
 Process: Zips the preset folder.
 Output: Prints the output path."""
 import argparse
+import os
 import shutil
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PRESETS_DIR = ROOT / ".imp" / "presets"
+PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
+PRESETS_DIR = PROJECT_DIR / ".imp" / "presets"
 
 
 def main() -> int:

@@ -17,8 +17,10 @@ import hashlib
 import tempfile
 from pathlib import Path
 
+from .paths import PROJECT_DIR
+
 _ROOT = Path(__file__).resolve().parent.parent
-_CACHE_DIR = _ROOT / ".imp" / "output" / "screenshots"
+_CACHE_DIR = PROJECT_DIR / ".imp" / "output" / "screenshots"
 
 
 def available() -> bool:

@@ -23,8 +23,10 @@ try:
 except ImportError:
     PasswordHasher = None  # type: ignore[assignment]
 
-ROOT = Path(__file__).resolve().parent.parent
-CONFIG_FILE = ROOT / ".imp" / "config.json"
+from .paths import IMP_DIR, PROJECT_DIR
+
+ROOT = IMP_DIR
+CONFIG_FILE = PROJECT_DIR / ".imp" / "config.json"
 
 
 # ---------- config I/O (intentionally duplicated from main.py) ----------
@@ -62,7 +64,7 @@ async def _run_subprocess(argv: list[str], timeout: float = 30.0) -> tuple[int, 
             *argv,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            cwd=ROOT,
+            cwd=PROJECT_DIR,
         )
     except (FileNotFoundError, PermissionError) as exc:
         return (127, f"failed to spawn: {exc}")
@@ -89,7 +91,7 @@ def detect_repo_from_git_sync() -> Optional[str]:
             capture_output=True,
             text=True,
             check=True,
-            cwd=ROOT,
+            cwd=PROJECT_DIR,
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
@@ -413,11 +415,30 @@ async def do_mark_setup_complete() -> dict[str, Any]:
 
 # ---------- system prompt ----------
 
-SETUP_SYSTEM_PROMPT = """\
+def _build_setup_prompt() -> str:
+    imp_dir = str(IMP_DIR)
+    project_dir = str(PROJECT_DIR)
+    # When Imp is a subfolder, tool paths need the Imp dir prefix
+    if imp_dir != project_dir:
+        tool_prefix = str(IMP_DIR) + "/"
+        dir_note = (
+            f"\n\n## Directory layout\n\n"
+            f"Imp is installed as a subfolder of this project.\n"
+            f"- Project root (CWD): `{project_dir}`\n"
+            f"- Imp code directory: `{imp_dir}`\n\n"
+            f"Git commands, README, and `.imp/` are at the project root. "
+            f"Tool scripts are inside the Imp directory."
+        )
+    else:
+        tool_prefix = ""
+        dir_note = ""
+
+    return f"""\
 You are the Setup Agent for Imp — a self-hosted coding agent that manages a \
 GitHub repo. Your job is to walk a fresh admin through first-run setup, one \
 step at a time. You have access to Bash, Read, and Write tools — use them \
 directly. No MCP.
+{dir_note}
 
 ## Config file
 
@@ -445,7 +466,7 @@ GPL-3.0) and let them pick.
      d. Ask public or private.
      e. Write a basic README.md with the project name, description, and \
 license.
-     f. Run `python tools/github/create_repo.py --name <name> [--private] \
+     f. Run `python3 {tool_prefix}tools/github/create_repo.py --name <name> [--private] \
 [--description "<desc>"]` to git init, create the repo, and push.
      g. Write the repo owner/name to `.imp/config.json`.
    - **If linking existing:** run `gh repo list --limit 30 --json \
@@ -515,7 +536,7 @@ async def run_setup(
     from claude_agent_sdk.types import ToolResultBlock
 
     options = ClaudeAgentOptions(
-        system_prompt=SETUP_SYSTEM_PROMPT,
+        system_prompt=_build_setup_prompt(),
         can_use_tool=_allow_all,
         max_turns=30,
     )

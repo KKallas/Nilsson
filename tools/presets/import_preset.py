@@ -7,12 +7,14 @@ Inputs:
 Process: Extracts the zip into .imp/presets/<name>/.
 Output: Prints the imported preset name."""
 import json
+import os
 import sys
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PRESETS_DIR = ROOT / ".imp" / "presets"
+PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
+PRESETS_DIR = PROJECT_DIR / ".imp" / "presets"
 
 
 def main() -> int:
