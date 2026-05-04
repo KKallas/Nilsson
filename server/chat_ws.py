@@ -142,7 +142,7 @@ async def handle_ws_chat(ws: WebSocket) -> None:
     except Exception:
         pass
 
-    confirm_queue: asyncio.Queue[bool] = asyncio.Queue()
+    confirm_queue: asyncio.Queue[bool | None] = asyncio.Queue()
     _confirm_counter = [0]
 
     async def confirm_tool(tool: str, description: str, preview: str) -> bool:
@@ -155,7 +155,10 @@ async def handle_ws_chat(ws: WebSocket) -> None:
             "description": description,
             "preview": preview[:3000],
         })
-        return await confirm_queue.get()
+        result = await confirm_queue.get()
+        if result is None:
+            raise asyncio.CancelledError()
+        return result
 
     try:
         while True:
@@ -167,7 +170,15 @@ async def handle_ws_chat(ws: WebSocket) -> None:
 
             if msg.get("type") == "stop":
                 if current_task and not current_task.done():
+                    # Wake any blocked confirm_queue.get() so cancel propagates.
+                    confirm_queue.put_nowait(None)
                     current_task.cancel()
+                    # Drain stale entries so they can't leak into the next turn.
+                    while not confirm_queue.empty():
+                        try:
+                            confirm_queue.get_nowait()
+                        except asyncio.QueueEmpty:
+                            break
                     await ws.send_json({"type": "status", "text": ""})
                     await ws.send_json({"type": "done", "full_text": "(stopped)"})
                 continue
@@ -221,6 +232,13 @@ async def handle_ws_chat(ws: WebSocket) -> None:
             session.append_turn("user", text)
             session.truncate()
             chat_history.save_session(session)
+
+            # Drain any stale confirm entries from a prior aborted turn.
+            while not confirm_queue.empty():
+                try:
+                    confirm_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
 
             # Status
             await ws.send_json({"type": "status", "text": "Thinking..."})

@@ -303,7 +303,10 @@ function connectWs() {
           `<button class="wf-btn" style="color:#da3633;border-color:#da3633;" onclick="respondConfirm('${confirmId}',false)">Reject</button></div>` +
           `</details></div>\n\n`;
         renderAgentBody();
-        setStatus('Waiting for approval...');
+        // Scroll the approval block into view
+        const block = document.querySelector(`[data-confirm-id="${confirmId}"]`);
+        if (block) block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setStatus(`<a href="#" style="color:var(--accent)" onclick="event.preventDefault();var b=document.querySelector('[data-confirm-id=\\'${confirmId}\\']');if(b)b.scrollIntoView({behavior:'smooth',block:'center'})">Waiting for approval (click to view)</a>`);
         break;
       }
     }
@@ -338,7 +341,13 @@ function send() {
 }
 
 function stop() {
-  if (ws) ws.send(JSON.stringify({ type: 'stop' }));
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'stop' }));
+  }
+  // Always clear local UI — server-side cancel is best-effort.
+  setWorking(false);
+  setStatus('');
+  pendingTools = {};
 }
 
 function onKey(e) {
