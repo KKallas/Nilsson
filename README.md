@@ -75,9 +75,11 @@ A conversation with the AI agent (Foreman). You type what you want done — "lis
 
 ### Tools
 
+The idea: you figure out how to do something by chatting with the agent, then convert that into a tool so it runs the exact same way every time — no LLM, no cost, no variation. When another team member needs to do the same thing, they run the tool and get the same result with zero effort.
+
 A tool is a simple, fixed Python script that does one thing. Plain `.py` files under `tools/<group>/<name>.py` — each has argparse, a docstring, and can be run standalone from the terminal. The agent discovers them automatically and can call any tool during a chat.
 
-The Tools tab lets you browse, edit, test, and organize tools without touching the filesystem. You can also ask the agent to generate new tools from a description, or promote a one-off chat solution into a permanent tool.
+The Tools tab lets you browse, edit, test, and organize tools. You can also ask the agent to generate new tools from a description, or promote a one-off chat solution into a permanent tool via the P button.
 
 Tools are grouped by folder (`github/`, `render/`, `imp/`, etc.). Each group can have a README and tools can have workflow step templates (`.step.py`) so they plug into workflows.
 
