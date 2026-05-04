@@ -160,6 +160,20 @@ async def handle_ws_chat(ws: WebSocket) -> None:
             raise asyncio.CancelledError()
         return result
 
+    apikey_queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+    async def ask_api_key(env_var: str, prompt: str) -> str | None:
+        """Prompt the user to paste an API key via the chat UI."""
+        await ws.send_json({
+            "type": "ask_apikey",
+            "env_var": env_var,
+            "prompt": prompt,
+        })
+        result = await apikey_queue.get()
+        if result is None:
+            raise asyncio.CancelledError()
+        return result.strip() if result else None
+
     try:
         while True:
             raw = await ws.receive_text()
@@ -170,15 +184,17 @@ async def handle_ws_chat(ws: WebSocket) -> None:
 
             if msg.get("type") == "stop":
                 if current_task and not current_task.done():
-                    # Wake any blocked confirm_queue.get() so cancel propagates.
+                    # Wake any blocked queues so cancel propagates.
                     confirm_queue.put_nowait(None)
+                    apikey_queue.put_nowait(None)
                     current_task.cancel()
                     # Drain stale entries so they can't leak into the next turn.
-                    while not confirm_queue.empty():
-                        try:
-                            confirm_queue.get_nowait()
-                        except asyncio.QueueEmpty:
-                            break
+                    for q in (confirm_queue, apikey_queue):
+                        while not q.empty():
+                            try:
+                                q.get_nowait()
+                            except asyncio.QueueEmpty:
+                                break
                 # Always clear the task ref so the user can send a new message
                 # even if cancel() didn't fully propagate through the SDK.
                 current_task = None
@@ -188,6 +204,10 @@ async def handle_ws_chat(ws: WebSocket) -> None:
 
             if msg.get("type") == "confirm_response":
                 await confirm_queue.put(msg.get("approved", False))
+                continue
+
+            if msg.get("type") == "apikey_response":
+                await apikey_queue.put(msg.get("value", ""))
                 continue
 
             if msg.get("type") == "save_rendered":
@@ -236,12 +256,13 @@ async def handle_ws_chat(ws: WebSocket) -> None:
             session.truncate()
             chat_history.save_session(session)
 
-            # Drain any stale confirm entries from a prior aborted turn.
-            while not confirm_queue.empty():
-                try:
-                    confirm_queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    break
+            # Drain any stale entries from a prior aborted turn.
+            for q in (confirm_queue, apikey_queue):
+                while not q.empty():
+                    try:
+                        q.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
 
             # Status
             await ws.send_json({"type": "status", "text": "Thinking..."})
@@ -292,6 +313,7 @@ async def handle_ws_chat(ws: WebSocket) -> None:
                         history=history_turns,
                         turn_ui=turn_ui,
                         confirm=confirm_tool,
+                        ask_key=ask_api_key,
                     )
 
                     # Save assistant turn with full structured log.
