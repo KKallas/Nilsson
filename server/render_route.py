@@ -146,8 +146,10 @@ async def health():
 @app.get("/api/setup-status")
 async def setup_status():
     """Return whether first-run setup is complete."""
-    from server.setup_agent import is_setup_complete
-    return {"complete": is_setup_complete()}
+    from server.setup_agent import is_setup_complete, CONFIG_FILE
+    complete = is_setup_complete()
+    print(f"[setup-status] CONFIG_FILE={CONFIG_FILE}, exists={CONFIG_FILE.exists()}, complete={complete}", flush=True)
+    return {"complete": complete}
 
 
 @app.post("/api/reload-prompt")

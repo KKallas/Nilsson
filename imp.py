@@ -188,6 +188,8 @@ def start_server() -> None:
     # subfolder. When developing Imp itself, they're the same.
     project_dir = Path.cwd().resolve()
     os.environ["IMP_PROJECT_DIR"] = str(project_dir)
+    print(f"  IMP_DIR:     {ROOT}", flush=True)
+    print(f"  PROJECT_DIR: {project_dir}", flush=True)
 
     os.execvp(
         sys.executable,
