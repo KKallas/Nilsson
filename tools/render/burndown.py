@@ -135,29 +135,13 @@ var openIssues = {open_json};
 var newIssues = {new_json};
 var closedIssues = {closed_json};
 
-// Ideal line: only 2 or 3 real points, nulls everywhere else
+// Ideal: straight line from first-day open to last-day open, every point filled
 var startVal = openIssues[0] || 0;
 var endVal = openIssues[openIssues.length - 1] || 0;
 var n = labels.length;
-var slope = (endVal - startVal) / Math.max(n - 1, 1);
-var ideal = new Array(n).fill(null);
-ideal[0] = startVal;
-ideal[n - 1] = endVal;
-
-if (slope < 0 && endVal > 0) {{
-  // Trending down: add one projected zero point
-  var extraDays = Math.ceil(endVal / Math.abs(slope));
-  for (var j = 0; j < extraDays; j++) {{
-    var last = new Date(labels[labels.length - 1] + " 2026");
-    last.setDate(last.getDate() + j + 1);
-    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    labels.push(months[last.getMonth()] + " " + String(last.getDate()).padStart(2, "0"));
-    openIssues.push(null);
-    newIssues.push(null);
-    closedIssues.push(null);
-    ideal.push(null);
-  }}
-  ideal[ideal.length - 1] = 0;
+var ideal = [];
+for (var i = 0; i < n; i++) {{
+  ideal.push(Math.round((startVal + (endVal - startVal) * i / Math.max(n - 1, 1)) * 100) / 100);
 }}
 
 new frappe.Chart("#chart", {{
@@ -176,7 +160,7 @@ new frappe.Chart("#chart", {{
   lineOptions: {{ regionFill: 0, dotSize: 3, hideLine: 0, hideDots: 0, spline: 1 }},
   axisOptions: {{ xAxisMode: "tick", xIsSeries: 1 }},
   tooltipOptions: {{
-    formatTooltipY: function(d) {{ return d !== null ? d + " issues" : "—"; }}
+    formatTooltipY: function(d) {{ return d + " issues"; }}
   }}
 }});
 </script>
@@ -184,11 +168,19 @@ new frappe.Chart("#chart", {{
 </html>"""
 
 
-def build_html(stats: dict, exclude: set[int]) -> str:
+def build_html(stats: dict, exclude: set[int], end_date: date | None = None) -> str:
     """Generate the full HTML string from daily stats."""
     title = "Issue Burndown \u2014 " + stats["labels"][0] + " to " + stats["labels"][-1]
     nums = sorted(exclude)
     subtitle = ("Excluding issues: " + ", ".join(f"#{n}" for n in nums)) if nums else "All issues included"
+
+    # Project zero-completion date if trending down
+    open_vals = stats["open_issues"]
+    if end_date and len(open_vals) >= 2 and open_vals[-1] < open_vals[0] and open_vals[-1] > 0:
+        daily_drop = (open_vals[0] - open_vals[-1]) / max(len(open_vals) - 1, 1)
+        extra_days = int(open_vals[-1] / daily_drop) + 1
+        projected = end_date + timedelta(days=extra_days)
+        subtitle += f" \u00b7 Projected zero: {projected.strftime('%b %d')}"
 
     total_new = sum(stats["new_issues"])
     total_closed = sum(stats["closed_issues"])
@@ -233,7 +225,7 @@ def main() -> int:
     total_closed = sum(stats["closed_issues"])
     end_open = stats["open_issues"][-1] if stats["open_issues"] else 0
 
-    html = build_html(stats, exclude)
+    html = build_html(stats, exclude, end_date=end_date)
 
     print("=== BURNDOWN BAR ===")
     print(f"Range: {start_date} to {end_date}  |  Excluded: {len(exclude)}")
