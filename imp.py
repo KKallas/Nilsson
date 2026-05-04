@@ -144,10 +144,12 @@ def find_missing(packages: list[str]) -> list[str]:
     return missing
 
 
-def install(packages: list[str]) -> None:
-    print(f"Installing: {', '.join(packages)}", flush=True)
+def install_from_requirements() -> None:
+    """Install all packages via requirements.txt so version pins are respected."""
+    print(f"Installing dependencies from {REQUIREMENTS_FILE.name}...", flush=True)
     result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "--quiet", "--compile", *packages],
+        [sys.executable, "-m", "pip", "install", "--quiet", "--compile",
+         "-r", str(REQUIREMENTS_FILE)],
         check=False,
     )
     if result.returncode != 0:
@@ -170,11 +172,33 @@ def install(packages: list[str]) -> None:
         )
 
 
+def _has_version_mismatch() -> bool:
+    """Check if any ==pinned package has the wrong version installed."""
+    from importlib.metadata import version as pkg_version, PackageNotFoundError
+    for raw in REQUIREMENTS_FILE.read_text().splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if "==" not in line:
+            continue
+        pkg, pinned = line.split("==", 1)
+        pkg, pinned = pkg.strip(), pinned.strip()
+        try:
+            installed = pkg_version(pkg)
+            if installed != pinned:
+                print(f"  {pkg}: installed {installed}, need {pinned}", flush=True)
+                return True
+        except PackageNotFoundError:
+            return True
+    return False
+
+
 def ensure_dependencies() -> None:
     packages = read_requirements()
     missing = find_missing(packages)
-    if missing:
-        install(missing)
+    if missing or _has_version_mismatch():
+        # Install everything via requirements.txt so version pins
+        # (e.g. ==0.1.58) are respected — bare package names would
+        # let pip pick any version.
+        install_from_requirements()
 
 
 # ---------- server launch ----------
