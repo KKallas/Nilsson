@@ -74,7 +74,29 @@ def _build_system_prompt() -> str:
     except Exception:
         pass
 
+    # For non-Claude models: reinforce that tools are Bash commands, not functions
+    llm_cfg = _load_llm_config()
+    if llm_cfg.get("base_url"):
+        base += "\n\n" + _NON_CLAUDE_TOOL_ADDENDUM
+
     return base
+
+
+_NON_CLAUDE_TOOL_ADDENDUM = """\
+## CRITICAL: How to use tools
+
+You have access to these built-in tools: **Bash**, **Read**, **Write**, **Edit**, **Glob**, **Grep**.
+
+To run any tool script listed above, you MUST use the **Bash** tool with the full command. For example:
+
+- To list tools: use Bash with command `python3 tools/imp/list_tools.py --verbose`
+- To check LLM backend: use Bash with command `python3 tools/llm/current.py`
+- To run any tool: use Bash with command `python3 tools/<group>/<script>.py --args`
+
+Do NOT call tool scripts as function names. They are NOT native functions. \
+They are Python scripts that must be executed via the Bash tool. \
+Always use `python3 tools/...` as a Bash command.
+"""
 
 
 def reload_prompt() -> str:
