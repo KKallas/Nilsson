@@ -20,7 +20,7 @@ python tools/llm/current.py
 python tools/llm/options.py
 
 # Switch to Kimi K2 via OpenRouter
-python tools/llm/change.py --model moonshotai/kimi-k2 --base-url https://openrouter.ai/api/v1 --api-key-env OPENROUTER_API_KEY
+python tools/llm/change.py --model moonshotai/kimi-k2 --base-url https://openrouter.ai/api --api-key-env OPENROUTER_API_KEY
 
 # Switch just the model
 python tools/llm/change.py --model anthropic/claude-sonnet-4

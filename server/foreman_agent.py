@@ -106,22 +106,27 @@ def _load_llm_config() -> dict[str, Any]:
 
 
 def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
-    """Translate the ``llm`` config block into kwargs for ClaudeAgentOptions."""
+    """Translate the ``llm`` config block into kwargs for ClaudeAgentOptions.
+
+    OpenRouter setup (per https://openrouter.ai/docs/guides/coding-agents/claude-code-integration):
+      ANTHROPIC_BASE_URL  = https://openrouter.ai/api   (NOT /api/v1)
+      ANTHROPIC_AUTH_TOKEN = <openrouter key>
+      ANTHROPIC_API_KEY   = ""                           (must be explicitly empty)
+    """
     kwargs: dict[str, Any] = {}
     if llm.get("model"):
         kwargs["model"] = llm["model"]
     env: dict[str, str] = {}
     if llm.get("base_url"):
         env["ANTHROPIC_BASE_URL"] = llm["base_url"]
-        # Tell the CLI this is a proxy so it strips Anthropic-specific
-        # beta headers and features from the request.
-        env["CLAUDE_CODE_SIMULATE_PROXY_USAGE"] = "1"
     api_key_env = llm.get("api_key_env")
     if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
-        # Forward the alternative key as ANTHROPIC_API_KEY for the SDK
+        # OpenRouter (and similar proxies) use ANTHROPIC_AUTH_TOKEN
+        # and require ANTHROPIC_API_KEY to be explicitly empty.
         key_value = os.environ.get(api_key_env, "")
         if key_value:
-            env["ANTHROPIC_API_KEY"] = key_value
+            env["ANTHROPIC_AUTH_TOKEN"] = key_value
+            env["ANTHROPIC_API_KEY"] = ""
     if env:
         kwargs["env"] = env
     return kwargs
