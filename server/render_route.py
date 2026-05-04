@@ -80,7 +80,7 @@ def _refresh_pr_branches() -> set[str]:
     try:
         result = _subprocess.run(
             ["gh", "pr", "list", "--json", "headRefName", "--limit", "100"],
-            capture_output=True, text=True, cwd=str(_ROOT), timeout=10,
+            capture_output=True, text=True, cwd=str(_PROJECT_DIR), timeout=10,
         )
         if result.returncode == 0:
             import json as _json
@@ -98,7 +98,7 @@ def _git_origin(path: str) -> str:
     # Check if path has uncommitted changes (untracked or modified)
     result = _subprocess.run(
         ["git", "status", "--porcelain", "--", path],
-        capture_output=True, text=True, cwd=str(_ROOT), timeout=5,
+        capture_output=True, text=True, cwd=str(_PROJECT_DIR), timeout=5,
     )
     if result.returncode != 0:
         return "local"
@@ -426,7 +426,7 @@ async def delete_chat(chat_id: str):
         try:
             await _aio.create_subprocess_exec(
                 "git", "branch", "-D", session.branch,
-                cwd=str(_ROOT), stdout=_aio.subprocess.DEVNULL,
+                cwd=str(_PROJECT_DIR), stdout=_aio.subprocess.DEVNULL,
                 stderr=_aio.subprocess.DEVNULL,
             )
         except Exception:
@@ -446,7 +446,7 @@ async def snapshot_dirty_check(chat_id: str):
 
     proc = await _aio.create_subprocess_exec(
         "git", "status", "--porcelain",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -484,7 +484,7 @@ async def create_snapshot(chat_id: str, request: Request):
     # Check for changes
     proc = await _aio.create_subprocess_exec(
         "git", "status", "--porcelain",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -497,7 +497,7 @@ async def create_snapshot(chat_id: str, request: Request):
         branch_name = f"imp/{chat_id}"
         proc = await _aio.create_subprocess_exec(
             "git", "checkout", "-b", branch_name,
-            cwd=str(_ROOT),
+            cwd=str(_PROJECT_DIR),
             stdout=_aio.subprocess.PIPE,
             stderr=_aio.subprocess.PIPE,
         )
@@ -509,7 +509,7 @@ async def create_snapshot(chat_id: str, request: Request):
         # Make sure we're on the right branch
         proc = await _aio.create_subprocess_exec(
             "git", "rev-parse", "--abbrev-ref", "HEAD",
-            cwd=str(_ROOT),
+            cwd=str(_PROJECT_DIR),
             stdout=_aio.subprocess.PIPE,
             stderr=_aio.subprocess.PIPE,
         )
@@ -518,7 +518,7 @@ async def create_snapshot(chat_id: str, request: Request):
         if current_branch != session.branch:
             proc = await _aio.create_subprocess_exec(
                 "git", "checkout", session.branch,
-                cwd=str(_ROOT),
+                cwd=str(_PROJECT_DIR),
                 stdout=_aio.subprocess.PIPE,
                 stderr=_aio.subprocess.PIPE,
             )
@@ -529,7 +529,7 @@ async def create_snapshot(chat_id: str, request: Request):
     # Stage all changes
     proc = await _aio.create_subprocess_exec(
         "git", "add", "-A",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -539,7 +539,7 @@ async def create_snapshot(chat_id: str, request: Request):
     commit_msg = f"snapshot: {name}"
     proc = await _aio.create_subprocess_exec(
         "git", "commit", "-m", commit_msg,
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -550,7 +550,7 @@ async def create_snapshot(chat_id: str, request: Request):
     # Get the commit hash
     proc = await _aio.create_subprocess_exec(
         "git", "rev-parse", "HEAD",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -560,7 +560,7 @@ async def create_snapshot(chat_id: str, request: Request):
     # Get list of changed files in this commit
     proc = await _aio.create_subprocess_exec(
         "git", "diff", "--name-only", "HEAD~1", "HEAD",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -598,7 +598,7 @@ async def restore_snapshot(chat_id: str, index: int):
     # Check for uncommitted changes
     proc = await _aio.create_subprocess_exec(
         "git", "status", "--porcelain",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -609,7 +609,7 @@ async def restore_snapshot(chat_id: str, index: int):
     # Reset to the snapshot commit
     proc = await _aio.create_subprocess_exec(
         "git", "checkout", commit_hash, "--", ".",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -639,7 +639,7 @@ async def restore_snapshot_force(chat_id: str, index: int):
     # Discard all changes and restore
     proc = await _aio.create_subprocess_exec(
         "git", "checkout", commit_hash, "--", ".",
-        cwd=str(_ROOT),
+        cwd=str(_PROJECT_DIR),
         stdout=_aio.subprocess.PIPE,
         stderr=_aio.subprocess.PIPE,
     )
@@ -691,7 +691,7 @@ async def create_issue_from_chat(chat_id: str):
             "--body", body[:65000],
             stdout=_aio.subprocess.PIPE,
             stderr=_aio.subprocess.PIPE,
-            cwd=str(_ROOT),
+            cwd=str(_PROJECT_DIR),
         )
         stdout, stderr = await _aio.wait_for(proc.communicate(), timeout=15)
         url = stdout.decode().strip()
