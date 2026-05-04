@@ -192,6 +192,7 @@ def start_server() -> None:
             "--host", HOST,
             "--port", str(PORT),
             "--log-level", "warning",
+            "--app-dir", str(ROOT),
         ],
     )
 
