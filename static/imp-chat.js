@@ -262,6 +262,7 @@ function connectWs() {
         pendingTools = {};
         setWorking(false);
         setStatus('');
+        ensureSnapshotBanner();
         scrollBottom();
         loadChats();
         if (_chatSourceLock && _chatSourceLock.chatId === currentChatId) {
@@ -460,6 +461,7 @@ async function loadChat(id, isActive) {
 
     imp.highlightAll(msgs);
     setHistoricMode(!isActive);
+    ensureSnapshotBanner();
     loadChats();
   } catch (e) { console.error('loadChat failed:', e); }
 }
@@ -474,6 +476,7 @@ async function newChat() {
     const dateStr = new Date().toLocaleString();
     msgs.innerHTML = `<div style="text-align:center;padding:16px 0 8px;"><strong>New chat</strong><br><span style="font-size:11px;color:var(--muted);">${dateStr}</span></div>`;
     setHistoricMode(false);
+    ensureSnapshotBanner();
     loadChats();
   } catch (e) { console.error('newChat failed:', e); }
 }
@@ -554,13 +557,28 @@ function renderSnapshotBlock(snap, index, chatId) {
     '</div></div>';
 }
 
+function ensureSnapshotBanner() {
+  // Place a clickable banner at the bottom of the messages area
+  const msgs = document.getElementById('messages');
+  if (!msgs) return;
+  // Remove existing banner (we re-append it at the end)
+  var old = msgs.querySelector('.snapshot-banner');
+  if (old) old.remove();
+  // Only show in active (non-historic) chats
+  if (isHistoricView || !currentChatId) return;
+  var banner = document.createElement('div');
+  banner.className = 'snapshot-banner';
+  banner.textContent = '+ Snapshot';
+  banner.onclick = createSnapshot;
+  msgs.appendChild(banner);
+}
+
 async function createSnapshot() {
   if (!currentChatId) return;
   const name = prompt('Name this snapshot:');
   if (!name) return;
-  const btn = document.getElementById('snapshot-btn');
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
+  const banner = document.querySelector('.snapshot-banner');
+  if (banner) { banner.classList.add('saving'); banner.textContent = 'Saving...'; }
   try {
     const res = await fetch(`${API}/api/chats/${currentChatId}/snapshots`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -572,19 +590,23 @@ async function createSnapshot() {
     } else if (data.error) {
       alert('Snapshot failed: ' + (data.message || data.error));
     } else if (data.ok) {
-      // Add snapshot block inline in the chat
+      // Insert snapshot block above the banner
       const msgs = document.getElementById('messages');
       const el = document.createElement('div');
       el.innerHTML = renderSnapshotBlock(data.snapshot, data.index, currentChatId);
-      msgs.appendChild(el.firstChild);
+      const bannerEl = msgs.querySelector('.snapshot-banner');
+      if (bannerEl) {
+        msgs.insertBefore(el.firstChild, bannerEl);
+      } else {
+        msgs.appendChild(el.firstChild);
+      }
       scrollBottom();
       loadChats();
     }
   } catch (e) {
     alert('Snapshot failed: ' + e);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '+ Snapshot';
+    ensureSnapshotBanner();
   }
 }
 
@@ -615,7 +637,12 @@ async function restoreSnapshot(chatId, index) {
           const msgs = document.getElementById('messages');
           const el = document.createElement('div');
           el.innerHTML = renderSnapshotBlock(snapData.snapshot, snapData.index, chatId);
-          msgs.appendChild(el.firstChild);
+          const bannerEl = msgs.querySelector('.snapshot-banner');
+          if (bannerEl) {
+            msgs.insertBefore(el.firstChild, bannerEl);
+          } else {
+            msgs.appendChild(el.firstChild);
+          }
         }
       }
       // Force restore
@@ -623,12 +650,14 @@ async function restoreSnapshot(chatId, index) {
       const forceData = await forceRes.json();
       if (forceData.ok) {
         addMessage('agent', '\uD83D\uDCBE Restored to **' + forceData.restored_to + '**');
+        ensureSnapshotBanner();
         scrollBottom();
       } else {
         alert('Restore failed: ' + (forceData.message || forceData.error));
       }
     } else if (data.ok) {
       addMessage('agent', '\uD83D\uDCBE Restored to **' + data.restored_to + '**');
+      ensureSnapshotBanner();
       scrollBottom();
     } else if (data.error) {
       alert('Restore failed: ' + (data.message || data.error));
@@ -639,7 +668,8 @@ async function restoreSnapshot(chatId, index) {
 }
 
 async function snapshotPR(chatId, index) {
-  // Open a new chat with the current chat as context, asking agent to help create a PR
+  if (!confirm('This will conclude this chat and open a new one to create the pull request.\n\nContinue?')) return;
+
   try {
     const snapRes = await fetch(`${API}/api/chats/${chatId}/snapshots`);
     const snapData = await snapRes.json();

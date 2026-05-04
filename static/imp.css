@@ -115,12 +115,12 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif
 #send-btn:disabled { opacity:0.4; cursor:not-allowed; }
 #stop-btn { background:#da3633; color:#fff; display:none; }
 
-/* --- snapshot row --- */
-#snapshot-row { display:flex; justify-content:flex-end; margin-top:6px; }
-#snapshot-btn { background:none; border:1px solid var(--border); color:var(--muted);
-  border-radius:6px; padding:4px 12px; cursor:pointer; font-size:12px; font-weight:500; }
-#snapshot-btn:hover { color:var(--fg); border-color:var(--accent); }
-#snapshot-btn:disabled { opacity:0.3; cursor:not-allowed; }
+/* --- snapshot banner (bottom of messages) --- */
+.snapshot-banner { margin:12px 24px; padding:10px 16px; border:1px dashed var(--border);
+  border-radius:8px; display:flex; align-items:center; justify-content:center; gap:8px;
+  cursor:pointer; color:var(--muted); font-size:13px; transition:border-color 0.15s, color 0.15s; }
+.snapshot-banner:hover { border-color:var(--accent); color:var(--fg); }
+.snapshot-banner.saving { opacity:0.5; pointer-events:none; }
 
 /* --- snapshot blocks (inline in chat) --- */
 .snapshot-block { margin:8px 0; padding:10px 14px; border:1px solid #1f6feb44;
