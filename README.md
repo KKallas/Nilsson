@@ -73,21 +73,23 @@ A conversation with the AI agent (Foreman). You type what you want done — "lis
 
 **Snapshots**: the [+ Snapshot] button at the bottom of the chat saves a named restore point — like a game save. You can restore to any previous snapshot or turn one into a pull request. No git knowledge needed; Imp handles branches and commits behind the scenes.
 
-### Workflows
-
-Multi-step automations built from tool scripts. A workflow is a folder under `workflows/` with numbered Python files (`step_1_sync.py`, `step_2_heuristics.py`, …). Each step has a `run(context)` function that receives results from previous steps and returns `{"ok": bool, "output": str}`.
-
-You can run workflows from the UI, build new ones by drag-and-dropping tools, or ask the agent to create one from a chat conversation. Workflows can pause mid-run to ask for your input (the pause shows up as a Queue item).
-
-Example: the built-in `weekly_triage` workflow syncs GitHub issues, runs estimation heuristics, generates a burndown chart, and posts a summary — all in one click.
-
 ### Tools
 
-Plain Python scripts under `tools/<group>/<name>.py`. Each script uses argparse, has a docstring, and can be run standalone from the terminal. The agent discovers them automatically and can call any tool during a chat.
+A tool is a simple, fixed Python script that does one thing. Plain `.py` files under `tools/<group>/<name>.py` — each has argparse, a docstring, and can be run standalone from the terminal. The agent discovers them automatically and can call any tool during a chat.
 
 The Tools tab lets you browse, edit, test, and organize tools without touching the filesystem. You can also ask the agent to generate new tools from a description, or promote a one-off chat solution into a permanent tool.
 
-Tools are grouped by folder (`github/`, `render/`, `imp/`, etc.). Each group can have a README and tools can have workflow step templates (`.step.py`) so they plug into workflows cleanly.
+Tools are grouped by folder (`github/`, `render/`, `imp/`, etc.). Each group can have a README and tools can have workflow step templates (`.step.py`) so they plug into workflows.
+
+### Workflows
+
+A workflow chains multiple tools together, with LLM glue in between. Where a tool is a single fixed script, a workflow is a sequence of tools that may need the AI agent to configure them, interpret results between steps, or make decisions at runtime — or both.
+
+Each workflow is a folder under `workflows/` with numbered step files (`step_1_sync.py`, `step_2_heuristics.py`, …). Steps pass results forward through a shared context. Workflows can pause mid-run to ask for your input (the pause shows up as a Queue item).
+
+You can build workflows from the UI by combining existing tools, or ask the agent to create one from a chat conversation.
+
+Example: the `weekly_triage` workflow syncs GitHub issues, runs estimation heuristics, generates a burndown chart, and posts a summary — all in one click.
 
 ## License
 
