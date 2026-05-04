@@ -270,10 +270,15 @@ async def dispatch(
     # Extended thinking is Anthropic-specific; disable for third-party backends
     # to avoid SDK crashes on non-standard response formats.
     use_thinking = not llm_cfg.get("base_url")
+
+    def _on_stderr(line: str) -> None:
+        print(f"[foreman:cli] {line}", file=sys.stderr, end="")
+
     options = ClaudeAgentOptions(
         system_prompt=_load_system_prompt(),
         can_use_tool=_make_security_hook(confirm),
         max_turns=20,
+        stderr=_on_stderr,
         **({"thinking": {"type": "enabled", "budget_tokens": 10000}} if use_thinking else {}),
         **llm_kwargs,
     )
@@ -299,6 +304,14 @@ async def dispatch(
                         file=sys.stderr,
                     )
                     if isinstance(message, AssistantMessage):
+                        # Log model + error field for diagnostics
+                        _model = getattr(message, 'model', None)
+                        _error = getattr(message, 'error', None)
+                        if _model or _error:
+                            print(
+                                f"[foreman] assistant: model={_model} error={_error}",
+                                file=sys.stderr,
+                            )
                         msg_thinking: list[Any] = []
                         msg_tools: list[Any] = []
                         msg_results: list[Any] = []
@@ -371,6 +384,18 @@ async def dispatch(
                                 )
 
                         for b in msg_text:
+                            # Detect CLI error leaked as text
+                            if (
+                                b.text
+                                and len(b.text) < 200
+                                and ("is not an object" in b.text
+                                     or "undefined" in b.text.lower()
+                                     or "TypeError" in b.text)
+                            ):
+                                print(
+                                    f"[foreman] CLI error in text: {b.text!r}",
+                                    file=sys.stderr,
+                                )
                             assistant_chunks.append(b.text)
                             if not msg_tools:
                                 await ui.stream_token(b.text)
@@ -397,7 +422,14 @@ async def dispatch(
                                     )
 
                     elif isinstance(message, ResultMessage):
-                        pass
+                        print(
+                            f"[foreman] result: is_error={message.is_error} "
+                            f"stop_reason={getattr(message, 'stop_reason', None)} "
+                            f"num_turns={getattr(message, 'num_turns', None)} "
+                            f"result={str(getattr(message, 'result', ''))[:500]} "
+                            f"errors={getattr(message, 'errors', None)}",
+                            file=sys.stderr,
+                        )
 
     except Exception as exc:  # noqa: BLE001
         print(f"[foreman] backend error: {type(exc).__name__}: {exc}", file=sys.stderr)
