@@ -13,6 +13,8 @@ No MCP server. No hardcoded tool functions. The agent is just:
 
 from __future__ import annotations
 
+import json
+import os
 import shlex
 import sys
 import time
@@ -80,6 +82,54 @@ def reload_prompt() -> str:
     global _cached_prompt
     _cached_prompt = _build_system_prompt()
     return _cached_prompt
+
+
+# ---------- LLM backend config ----------
+
+
+def _load_llm_config() -> dict[str, Any]:
+    """Read the ``llm`` block from ``.imp/config.json``, if present.
+
+    Returns a dict that may contain ``model``, ``base_url``, and
+    ``api_key_env``.  Empty dict when no custom backend is configured.
+    """
+    from .paths import PROJECT_DIR
+
+    cfg_file = PROJECT_DIR / ".imp" / "config.json"
+    if not cfg_file.exists():
+        return {}
+    try:
+        cfg = json.loads(cfg_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return cfg.get("llm") or {}
+
+
+def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
+    """Translate the ``llm`` config block into kwargs for ClaudeAgentOptions.
+
+    OpenRouter setup (per https://openrouter.ai/docs/guides/coding-agents/claude-code-integration):
+      ANTHROPIC_BASE_URL  = https://openrouter.ai/api   (NOT /api/v1)
+      ANTHROPIC_AUTH_TOKEN = <openrouter key>
+      ANTHROPIC_API_KEY   = ""                           (must be explicitly empty)
+    """
+    kwargs: dict[str, Any] = {}
+    if llm.get("model"):
+        kwargs["model"] = llm["model"]
+    env: dict[str, str] = {}
+    if llm.get("base_url"):
+        env["ANTHROPIC_BASE_URL"] = llm["base_url"]
+    api_key_env = llm.get("api_key_env")
+    if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
+        # OpenRouter (and similar proxies) use ANTHROPIC_AUTH_TOKEN
+        # and require ANTHROPIC_API_KEY to be explicitly empty.
+        key_value = os.environ.get(api_key_env, "")
+        if key_value:
+            env["ANTHROPIC_AUTH_TOKEN"] = key_value
+            env["ANTHROPIC_API_KEY"] = ""
+    if env:
+        kwargs["env"] = env
+    return kwargs
 
 
 # ---------- security hook ----------
@@ -220,11 +270,22 @@ async def dispatch(
     ui = turn_ui or TurnUI()
     tracker = _ToolTracker(ui) if turn_ui is not None else None
 
+    llm_cfg = _load_llm_config()
+    llm_kwargs = _llm_sdk_kwargs(llm_cfg)
+    # Extended thinking is Anthropic-specific; disable for third-party backends
+    # to avoid SDK crashes on non-standard response formats.
+    use_thinking = not llm_cfg.get("base_url")
+
+    def _on_stderr(line: str) -> None:
+        print(f"[foreman:cli] {line}", file=sys.stderr, end="")
+
     options = ClaudeAgentOptions(
         system_prompt=_load_system_prompt(),
         can_use_tool=_make_security_hook(confirm),
         max_turns=20,
-        thinking={"type": "enabled", "budget_tokens": 10000},
+        stderr=_on_stderr,
+        **({"thinking": {"type": "enabled", "budget_tokens": 10000}} if use_thinking else {}),
+        **llm_kwargs,
     )
 
     cm_factory = thinking if thinking is not None else (lambda _label: _NullAsyncContext())
@@ -248,6 +309,14 @@ async def dispatch(
                         file=sys.stderr,
                     )
                     if isinstance(message, AssistantMessage):
+                        # Log model + error field for diagnostics
+                        _model = getattr(message, 'model', None)
+                        _error = getattr(message, 'error', None)
+                        if _model or _error:
+                            print(
+                                f"[foreman] assistant: model={_model} error={_error}",
+                                file=sys.stderr,
+                            )
                         msg_thinking: list[Any] = []
                         msg_tools: list[Any] = []
                         msg_results: list[Any] = []
@@ -320,6 +389,18 @@ async def dispatch(
                                 )
 
                         for b in msg_text:
+                            # Detect CLI error leaked as text
+                            if (
+                                b.text
+                                and len(b.text) < 200
+                                and ("is not an object" in b.text
+                                     or "undefined" in b.text.lower()
+                                     or "TypeError" in b.text)
+                            ):
+                                print(
+                                    f"[foreman] CLI error in text: {b.text!r}",
+                                    file=sys.stderr,
+                                )
                             assistant_chunks.append(b.text)
                             if not msg_tools:
                                 await ui.stream_token(b.text)
@@ -346,7 +427,14 @@ async def dispatch(
                                     )
 
                     elif isinstance(message, ResultMessage):
-                        pass
+                        print(
+                            f"[foreman] result: is_error={message.is_error} "
+                            f"stop_reason={getattr(message, 'stop_reason', None)} "
+                            f"num_turns={getattr(message, 'num_turns', None)} "
+                            f"result={str(getattr(message, 'result', ''))[:500]} "
+                            f"errors={getattr(message, 'errors', None)}",
+                            file=sys.stderr,
+                        )
 
     except Exception as exc:  # noqa: BLE001
         print(f"[foreman] backend error: {type(exc).__name__}: {exc}", file=sys.stderr)
