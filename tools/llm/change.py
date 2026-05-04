@@ -12,7 +12,6 @@ Process: Writes the `llm` block in `.imp/config.json`. The Foreman agent
 Output: Prints the updated LLM backend settings."""
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -70,12 +69,6 @@ def main() -> int:
         llm["base_url"] = args.base_url
     if args.api_key_env:
         llm["api_key_env"] = args.api_key_env
-
-    # Warn if the API key env var is not set
-    key_env = llm.get("api_key_env", "ANTHROPIC_API_KEY")
-    if not os.environ.get(key_env):
-        print(f"Warning: {key_env} is not set in the environment.", file=sys.stderr)
-        print(f"The agent will fail until this variable is exported.", file=sys.stderr)
 
     cfg["llm"] = llm
 
