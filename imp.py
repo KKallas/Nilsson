@@ -32,7 +32,7 @@ REQUIRED_PYTHON = (3, 11)
 ROOT = Path(__file__).resolve().parent
 VENV_DIR = ROOT / ".venv"
 REQUIREMENTS_FILE = ROOT / "requirements.txt"
-STATE_DIR = ROOT / ".imp"
+STATE_DIR = Path.cwd().resolve() / ".imp"
 HOST = "127.0.0.1"
 PORT = 8421
 
@@ -182,6 +182,12 @@ def ensure_dependencies() -> None:
 def start_server() -> None:
     print(f"\nStarting Imp at http://{HOST}:{PORT}", flush=True)
     print("Ctrl+C to stop.\n", flush=True)
+
+    # Tell the server where the project lives. When Imp is a subfolder
+    # inside a project, CWD is the project root and ROOT is the Imp
+    # subfolder. When developing Imp itself, they're the same.
+    project_dir = Path.cwd().resolve()
+    os.environ["IMP_PROJECT_DIR"] = str(project_dir)
 
     os.execvp(
         sys.executable,

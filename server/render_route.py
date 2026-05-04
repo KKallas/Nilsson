@@ -32,6 +32,8 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from server.paths import PROJECT_DIR as _PROJECT_DIR
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
@@ -732,7 +734,7 @@ async def serve_artifact(chat_id: str, path: str):
 # ── activation API ─────────────────────────────────────────────────
 
 def _load_imp_config() -> dict:
-    cfg_file = _ROOT / ".imp" / "config.json"
+    cfg_file = _PROJECT_DIR / ".imp" / "config.json"
     if cfg_file.exists():
         try:
             return json.loads(cfg_file.read_text())
@@ -741,7 +743,7 @@ def _load_imp_config() -> dict:
     return {}
 
 def _save_imp_config(cfg: dict) -> None:
-    cfg_file = _ROOT / ".imp" / "config.json"
+    cfg_file = _PROJECT_DIR / ".imp" / "config.json"
     cfg_file.parent.mkdir(parents=True, exist_ok=True)
     cfg_file.write_text(json.dumps(cfg, indent=2))
 

@@ -122,7 +122,8 @@ def delete_config(tool_name: str, exec_name: str) -> bool:
 def _get_active_tools() -> list[str] | None:
     """Return list of active tool groups from config, or None if no filter set."""
     import json
-    cfg_file = _TOOLS_DIR.parent / ".imp" / "config.json"
+    from server.paths import PROJECT_DIR
+    cfg_file = PROJECT_DIR / ".imp" / "config.json"
     if cfg_file.exists():
         try:
             cfg = json.loads(cfg_file.read_text())
