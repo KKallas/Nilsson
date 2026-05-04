@@ -179,8 +179,11 @@ async def handle_ws_chat(ws: WebSocket) -> None:
                             confirm_queue.get_nowait()
                         except asyncio.QueueEmpty:
                             break
-                    await ws.send_json({"type": "status", "text": ""})
-                    await ws.send_json({"type": "done", "full_text": "(stopped)"})
+                # Always clear the task ref so the user can send a new message
+                # even if cancel() didn't fully propagate through the SDK.
+                current_task = None
+                await ws.send_json({"type": "status", "text": ""})
+                await ws.send_json({"type": "done", "full_text": "(stopped)"})
                 continue
 
             if msg.get("type") == "confirm_response":
