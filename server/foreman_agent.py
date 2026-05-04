@@ -262,12 +262,16 @@ async def dispatch(
     ui = turn_ui or TurnUI()
     tracker = _ToolTracker(ui) if turn_ui is not None else None
 
-    llm_kwargs = _llm_sdk_kwargs(_load_llm_config())
+    llm_cfg = _load_llm_config()
+    llm_kwargs = _llm_sdk_kwargs(llm_cfg)
+    # Extended thinking is Anthropic-specific; disable for third-party backends
+    # to avoid SDK crashes on non-standard response formats.
+    use_thinking = not llm_cfg.get("base_url")
     options = ClaudeAgentOptions(
         system_prompt=_load_system_prompt(),
         can_use_tool=_make_security_hook(confirm),
         max_turns=20,
-        thinking={"type": "enabled", "budget_tokens": 10000},
+        **({"thinking": {"type": "enabled", "budget_tokens": 10000}} if use_thinking else {}),
         **llm_kwargs,
     )
 
