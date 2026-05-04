@@ -324,17 +324,36 @@ async def handle_ws_chat(ws: WebSocket) -> None:
                         "chat_id": chat_id,
                     })
 
-                except asyncio.CancelledError:
-                    await _safe_send({"type": "done", "full_text": "(stopped)"})
-                except Exception as exc:
-                    print(
-                        f"[chat_ws] dispatch error: {type(exc).__name__}: {exc}",
-                        file=sys.stderr,
-                    )
-                    await _safe_send({
-                        "type": "error",
-                        "text": f"{type(exc).__name__}: {exc}",
-                    })
+                except (asyncio.CancelledError, Exception) as exc:
+                    is_cancel = isinstance(exc, asyncio.CancelledError)
+                    if not is_cancel:
+                        print(
+                            f"[chat_ws] dispatch error: {type(exc).__name__}: {exc}",
+                            file=sys.stderr,
+                        )
+
+                    # Save whatever the agent produced before it was
+                    # interrupted so partial work isn't lost from history.
+                    partial = turn_ui.tool_log or turn_ui.thinking_log
+                    if partial:
+                        session.append_turn(
+                            "assistant",
+                            "(stopped)" if is_cancel else f"(error: {exc})",
+                            tool_calls=turn_ui.tool_log,
+                            thinking=turn_ui.thinking_log,
+                            artifacts=turn_ui.artifact_log,
+                            blocks=turn_ui.blocks_log,
+                        )
+                        session.truncate()
+                        chat_history.save_session(session)
+
+                    if is_cancel:
+                        await _safe_send({"type": "done", "full_text": "(stopped)"})
+                    else:
+                        await _safe_send({
+                            "type": "error",
+                            "text": f"{type(exc).__name__}: {exc}",
+                        })
 
             current_task = asyncio.create_task(_run_dispatch())
 
