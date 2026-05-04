@@ -522,6 +522,7 @@ async def run_setup(
         "Hi — I'm the **Setup Agent**. Let me check what's needed to get "
         "Imp running.\n\n"
     )
+    print("[setup] greeting sent, initializing SDK...", file=sys.stderr)
 
     import time
 
@@ -540,6 +541,7 @@ async def run_setup(
         can_use_tool=_allow_all,
         max_turns=30,
     )
+    print("[setup] SDK options ready, starting agent loop...", file=sys.stderr)
 
     pending_tools: dict[str, tuple[str, float]] = {}  # tool_id -> (name, start_time)
 
@@ -557,6 +559,7 @@ async def run_setup(
     current_turn = "start"
     async with ClaudeSDKClient(options=options) as client:
         while True:
+            print(f"[setup] querying: {current_turn!r}", file=sys.stderr)
             await client.query(current_turn)
             assistant_text_parts: list[str] = []
             async for message in client.receive_response():
@@ -577,14 +580,17 @@ async def run_setup(
                             await _handle_result(block)
 
             reply = "".join(assistant_text_parts).strip()
+            print(f"[setup] reply: {reply[:120]!r}...", file=sys.stderr)
             if reply:
                 await say(reply)
 
             if is_setup_complete():
+                print("[setup] setup complete!", file=sys.stderr)
                 return
 
             next_turn = await ask("(reply to Setup Agent)")
             if next_turn is None:
                 await say("No response — setup paused here. Refresh to resume.")
                 return
+            print(f"[setup] user replied: {next_turn!r}", file=sys.stderr)
             current_turn = next_turn
