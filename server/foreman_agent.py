@@ -13,6 +13,8 @@ No MCP server. No hardcoded tool functions. The agent is just:
 
 from __future__ import annotations
 
+import json
+import os
 import shlex
 import sys
 import time
@@ -80,6 +82,46 @@ def reload_prompt() -> str:
     global _cached_prompt
     _cached_prompt = _build_system_prompt()
     return _cached_prompt
+
+
+# ---------- LLM backend config ----------
+
+
+def _load_llm_config() -> dict[str, Any]:
+    """Read the ``llm`` block from ``.imp/config.json``, if present.
+
+    Returns a dict that may contain ``model``, ``base_url``, and
+    ``api_key_env``.  Empty dict when no custom backend is configured.
+    """
+    from .paths import PROJECT_DIR
+
+    cfg_file = PROJECT_DIR / ".imp" / "config.json"
+    if not cfg_file.exists():
+        return {}
+    try:
+        cfg = json.loads(cfg_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return cfg.get("llm") or {}
+
+
+def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
+    """Translate the ``llm`` config block into kwargs for ClaudeAgentOptions."""
+    kwargs: dict[str, Any] = {}
+    if llm.get("model"):
+        kwargs["model"] = llm["model"]
+    env: dict[str, str] = {}
+    if llm.get("base_url"):
+        env["ANTHROPIC_BASE_URL"] = llm["base_url"]
+    api_key_env = llm.get("api_key_env")
+    if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
+        # Forward the alternative key as ANTHROPIC_API_KEY for the SDK
+        key_value = os.environ.get(api_key_env, "")
+        if key_value:
+            env["ANTHROPIC_API_KEY"] = key_value
+    if env:
+        kwargs["env"] = env
+    return kwargs
 
 
 # ---------- security hook ----------
@@ -220,11 +262,13 @@ async def dispatch(
     ui = turn_ui or TurnUI()
     tracker = _ToolTracker(ui) if turn_ui is not None else None
 
+    llm_kwargs = _llm_sdk_kwargs(_load_llm_config())
     options = ClaudeAgentOptions(
         system_prompt=_load_system_prompt(),
         can_use_tool=_make_security_hook(confirm),
         max_turns=20,
         thinking={"type": "enabled", "budget_tokens": 10000},
+        **llm_kwargs,
     )
 
     cm_factory = thinking if thinking is not None else (lambda _label: _NullAsyncContext())
