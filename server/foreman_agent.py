@@ -212,6 +212,7 @@ async def dispatch(
         ResultMessage,
         TextBlock,
         ThinkingBlock,
+        ThinkingConfigEnabled,
         ToolUseBlock,
         UserMessage,
     )
@@ -224,7 +225,7 @@ async def dispatch(
         system_prompt=_load_system_prompt(),
         can_use_tool=_make_security_hook(confirm),
         max_turns=20,
-        thinking={"type": "enabled", "budget_tokens": 10000},
+        thinking=ThinkingConfigEnabled(budget_tokens=10000),
     )
 
     cm_factory = thinking if thinking is not None else (lambda _label: _NullAsyncContext())
@@ -270,6 +271,11 @@ async def dispatch(
                                 )
 
                         for b in msg_thinking:
+                            print(
+                                f"[foreman] thinking block: {len(b.thinking)} chars, "
+                                f"preview={b.thinking[:80]!r}",
+                                file=sys.stderr,
+                            )
                             await ui.thinking_update(b.thinking)
 
                         # Register new tool calls in the tracker

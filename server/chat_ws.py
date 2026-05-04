@@ -294,8 +294,11 @@ async def handle_ws_chat(ws: WebSocket) -> None:
                         confirm=confirm_tool,
                     )
 
-                    # Save assistant turn with full structured log
-                    if reply:
+                    # Save assistant turn with full structured log.
+                    # Always save — even tool-only turns with no prose —
+                    # so thinking + tool context survives in history.
+                    has_content = reply or turn_ui.tool_log or turn_ui.thinking_log
+                    if has_content:
                         session.append_turn(
                             "assistant",
                             reply,
