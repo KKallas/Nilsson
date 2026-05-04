@@ -126,6 +126,7 @@ class ChatSession:
     last_active_at: str = field(default_factory=_utcnow_iso)
     repo: Optional[str] = None
     branch: Optional[str] = None  # git branch name (e.g. "imp/chat-abc123")
+    snapshots: list[dict[str, Any]] = field(default_factory=list)
     turns: list[Turn] = field(default_factory=list)
 
     # ---- factories ----
@@ -145,6 +146,7 @@ class ChatSession:
             last_active_at=str(data.get("last_active_at") or _utcnow_iso()),
             repo=data.get("repo"),
             branch=data.get("branch"),
+            snapshots=list(data.get("snapshots") or []),
             turns=[Turn.from_dict(t) for t in data.get("turns") or []],
         )
 
@@ -162,6 +164,8 @@ class ChatSession:
         }
         if self.branch:
             d["branch"] = self.branch
+        if self.snapshots:
+            d["snapshots"] = list(self.snapshots)
         return d
 
     def folder(self, base: Optional[Path] = None) -> Path:
@@ -403,6 +407,9 @@ def list_sessions(
                 }
             if data.get("branch"):
                 row["branch"] = data["branch"]
+            snaps = data.get("snapshots") or []
+            if snaps:
+                row["snapshot_count"] = len(snaps)
             rows.append(row)
         except (json.JSONDecodeError, KeyError) as exc:
             print(f"[chat_history] skipping unreadable {chat_json}: {exc}", file=sys.stderr)

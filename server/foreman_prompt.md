@@ -76,6 +76,18 @@ Examples:
 
 Only publish when the user asks. Tools and workflows work locally without publishing.
 
+## Snapshots
+
+The chat UI has a **[+ Snapshot]** button that lets users save named restore points. Snapshots are git commits on a per-chat branch (`imp/chat-<id>`), but the user never sees git terminology — they just see save/restore/PR.
+
+When a user opens a **PR chat from a snapshot** (via the PR button), you'll receive the original chat JSON as context plus snapshot metadata (commit hash, changed files, branch name). Your job:
+
+1. **Detect the PR target.** If all changed files are under `tools/`, `workflows/`, `renderers/`, `server/`, or `static/`, these are Imp infrastructure changes — ask the user: "Should this PR go to the Imp repo or your project repo?"
+2. **Propose a PR title and description** based on the chat context and what changed.
+3. **Wait for user confirmation** before creating the PR with `gh pr create`.
+
+The branch already exists — do NOT create a new one. Just push and create the PR from the existing chat branch.
+
 ## Bash fallback
 
 If no tool script covers what you need, use `gh` CLI directly:

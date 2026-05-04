@@ -262,6 +262,7 @@ function connectWs() {
         pendingTools = {};
         setWorking(false);
         setStatus('');
+        ensureSnapshotBanner();
         scrollBottom();
         loadChats();
         if (_chatSourceLock && _chatSourceLock.chatId === currentChatId) {
@@ -434,13 +435,33 @@ async function loadChat(id, isActive) {
     const dateStr = chat.created_at ? new Date(chat.created_at).toLocaleString() : '';
     const title = chat.title || 'Chat';
     msgs.innerHTML = `<div style="text-align:center;padding:16px 0 8px;"><strong>${title}</strong><br><span style="font-size:11px;color:var(--muted);">${dateStr}</span></div>`;
+
+    // Build timeline: interleave turns and snapshots by timestamp
+    const items = [];
     (chat.turns || []).forEach(t => {
-      const role = t.role === 'user' ? 'user' : 'agent';
-      const content = role === 'agent' ? renderTurnFull(t) : t.content;
-      addMessage(role, content);
+      items.push({type: 'turn', data: t, ts: t.timestamp || ''});
     });
+    (chat.snapshots || []).forEach((s, i) => {
+      items.push({type: 'snapshot', data: s, index: i, ts: s.timestamp || ''});
+    });
+    items.sort((a, b) => (a.ts || '').localeCompare(b.ts || ''));
+
+    items.forEach(item => {
+      if (item.type === 'turn') {
+        const t = item.data;
+        const role = t.role === 'user' ? 'user' : 'agent';
+        const content = role === 'agent' ? renderTurnFull(t) : t.content;
+        addMessage(role, content);
+      } else {
+        const el = document.createElement('div');
+        el.innerHTML = renderSnapshotBlock(item.data, item.index, id);
+        msgs.appendChild(el.firstChild);
+      }
+    });
+
     imp.highlightAll(msgs);
     setHistoricMode(!isActive);
+    ensureSnapshotBanner();
     loadChats();
   } catch (e) { console.error('loadChat failed:', e); }
 }
@@ -455,6 +476,7 @@ async function newChat() {
     const dateStr = new Date().toLocaleString();
     msgs.innerHTML = `<div style="text-align:center;padding:16px 0 8px;"><strong>New chat</strong><br><span style="font-size:11px;color:var(--muted);">${dateStr}</span></div>`;
     setHistoricMode(false);
+    ensureSnapshotBanner();
     loadChats();
   } catch (e) { console.error('newChat failed:', e); }
 }
@@ -465,8 +487,13 @@ async function deleteChat() {
     const res = await fetch(`${API}/api/chats/${currentChatId}`);
     const chat = await res.json();
     const hasTurns = (chat.turns || []).length > 0;
+    const snapCount = (chat.snapshots || []).length;
     if (hasTurns) {
-      const choice = prompt('Delete chat "' + (chat.title || 'Untitled') + '"?\n\nType "issue" to create a GitHub issue from this chat first.\nType "delete" to delete without saving.\nLeave empty to cancel.');
+      let snapWarning = '';
+      if (snapCount > 0) {
+        snapWarning = '\n\nThis chat has ' + snapCount + ' snapshot' + (snapCount > 1 ? 's' : '') + ' that haven\'t been shared as PRs. Deleting will remove them.';
+      }
+      const choice = prompt('Delete chat "' + (chat.title || 'Untitled') + '"?' + snapWarning + '\n\nType "issue" to create a GitHub issue from this chat first.\nType "delete" to delete without saving.\nLeave empty to cancel.');
       if (!choice) return;
       if (choice.toLowerCase() === 'issue') {
         const r = await fetch(`${API}/api/chats/${currentChatId}/create-issue`, { method: 'POST' });
@@ -512,4 +539,157 @@ async function openChatWithContext(files, instructions, userPrompt, sourceLock, 
       }
     }
   } catch (e) { alert('Failed to open chat: ' + e); }
+}
+
+// --- snapshots ---
+
+function renderSnapshotBlock(snap, index, chatId) {
+  const ts = snap.timestamp ? new Date(snap.timestamp).toLocaleString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+  const fileCount = (snap.changed_files || []).length;
+  const fileTip = fileCount ? fileCount + ' file' + (fileCount > 1 ? 's' : '') : '';
+  return '<div class="snapshot-block" data-snap-index="' + index + '">' +
+    '<span class="snap-icon">\uD83D\uDCBE</span>' +
+    '<div class="snap-info"><div class="snap-name">' + (snap.name || 'Snapshot') + '</div>' +
+    '<div class="snap-meta">' + ts + (fileTip ? ' \u00B7 ' + fileTip : '') + '</div></div>' +
+    '<div class="snap-actions">' +
+    '<button onclick="restoreSnapshot(\'' + chatId + '\',' + index + ')">Restore</button>' +
+    '<button onclick="snapshotPR(\'' + chatId + '\',' + index + ')">PR</button>' +
+    '</div></div>';
+}
+
+function ensureSnapshotBanner() {
+  // Place a clickable banner at the bottom of the messages area
+  const msgs = document.getElementById('messages');
+  if (!msgs) return;
+  // Remove existing banner (we re-append it at the end)
+  var old = msgs.querySelector('.snapshot-banner');
+  if (old) old.remove();
+  // Only show in active (non-historic) chats
+  if (isHistoricView || !currentChatId) return;
+  var banner = document.createElement('div');
+  banner.className = 'snapshot-banner';
+  banner.textContent = '+ Snapshot';
+  banner.onclick = createSnapshot;
+  msgs.appendChild(banner);
+}
+
+async function createSnapshot() {
+  if (!currentChatId) return;
+  const name = prompt('Name this snapshot:');
+  if (!name) return;
+  const banner = document.querySelector('.snapshot-banner');
+  if (banner) { banner.classList.add('saving'); banner.textContent = 'Saving...'; }
+  try {
+    const res = await fetch(`${API}/api/chats/${currentChatId}/snapshots`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name}),
+    });
+    const data = await res.json();
+    if (data.error === 'no_changes') {
+      alert('No changes to snapshot.');
+    } else if (data.error) {
+      alert('Snapshot failed: ' + (data.message || data.error));
+    } else if (data.ok) {
+      // Insert snapshot block above the banner
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.innerHTML = renderSnapshotBlock(data.snapshot, data.index, currentChatId);
+      const bannerEl = msgs.querySelector('.snapshot-banner');
+      if (bannerEl) {
+        msgs.insertBefore(el.firstChild, bannerEl);
+      } else {
+        msgs.appendChild(el.firstChild);
+      }
+      scrollBottom();
+      loadChats();
+    }
+  } catch (e) {
+    alert('Snapshot failed: ' + e);
+  } finally {
+    ensureSnapshotBanner();
+  }
+}
+
+async function restoreSnapshot(chatId, index) {
+  // First try normal restore (will warn if dirty)
+  try {
+    const res = await fetch(`${API}/api/chats/${chatId}/snapshots/${index}/restore`, {method: 'POST'});
+    const data = await res.json();
+    if (data.warning === 'dirty') {
+      const choice = prompt(
+        'You have unsaved changes that will be lost.\n\n' +
+        'Type "snapshot" to save current state first, then restore.\n' +
+        'Type "restore" to discard changes and restore.\n' +
+        'Leave empty to cancel.'
+      );
+      if (!choice) return;
+      if (choice.toLowerCase() === 'snapshot') {
+        const snapName = prompt('Name for current state snapshot:');
+        if (!snapName) return;
+        const snapRes = await fetch(`${API}/api/chats/${chatId}/snapshots`, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name: snapName}),
+        });
+        const snapData = await snapRes.json();
+        if (snapData.error) { alert('Save failed: ' + (snapData.message || snapData.error)); return; }
+        // Now add the snapshot block inline
+        if (snapData.ok) {
+          const msgs = document.getElementById('messages');
+          const el = document.createElement('div');
+          el.innerHTML = renderSnapshotBlock(snapData.snapshot, snapData.index, chatId);
+          const bannerEl = msgs.querySelector('.snapshot-banner');
+          if (bannerEl) {
+            msgs.insertBefore(el.firstChild, bannerEl);
+          } else {
+            msgs.appendChild(el.firstChild);
+          }
+        }
+      }
+      // Force restore
+      const forceRes = await fetch(`${API}/api/chats/${chatId}/snapshots/${index}/restore-force`, {method: 'POST'});
+      const forceData = await forceRes.json();
+      if (forceData.ok) {
+        addMessage('agent', '\uD83D\uDCBE Restored to **' + forceData.restored_to + '**');
+        ensureSnapshotBanner();
+        scrollBottom();
+      } else {
+        alert('Restore failed: ' + (forceData.message || forceData.error));
+      }
+    } else if (data.ok) {
+      addMessage('agent', '\uD83D\uDCBE Restored to **' + data.restored_to + '**');
+      ensureSnapshotBanner();
+      scrollBottom();
+    } else if (data.error) {
+      alert('Restore failed: ' + (data.message || data.error));
+    }
+  } catch (e) {
+    alert('Restore failed: ' + e);
+  }
+}
+
+async function snapshotPR(chatId, index) {
+  if (!confirm('This will conclude this chat and open a new one to create the pull request.\n\nContinue?')) return;
+
+  try {
+    const snapRes = await fetch(`${API}/api/chats/${chatId}/snapshots`);
+    const snapData = await snapRes.json();
+    const snapshot = (snapData.snapshots || [])[index];
+    if (!snapshot) { alert('Snapshot not found'); return; }
+
+    const chatFile = '.imp/chats/' + chatId + '/chat.json';
+    const changedFiles = (snapshot.changed_files || []).join(', ');
+    const impDirs = ['tools/', 'workflows/', 'renderers/', 'server/', 'static/'];
+    const isImpChange = snapshot.changed_files && snapshot.changed_files.length > 0 &&
+      snapshot.changed_files.every(function(f) { return impDirs.some(function(d) { return f.startsWith(d); }); });
+    const targetHint = isImpChange
+      ? 'The changed files (' + changedFiles + ') are all Imp infrastructure files. Ask the user: should this PR go to the Imp repo or the project repo?'
+      : 'Changed files: ' + changedFiles;
+
+    const instructions = 'Create a pull request from snapshot "' + snapshot.name + '" (commit ' + snapshot.commit_hash.substring(0, 8) + '). ' +
+      'The branch is already created. ' + targetHint + '\n\n' +
+      'Propose a PR title and description based on the chat context and changed files. ' +
+      'Ask the user to confirm before creating the PR.';
+
+    openChatWithContext([chatFile], '', instructions, null, 'PR: ' + snapshot.name);
+  } catch (e) { alert('Failed: ' + e); }
 }
