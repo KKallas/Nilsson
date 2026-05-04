@@ -113,6 +113,9 @@ def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
     env: dict[str, str] = {}
     if llm.get("base_url"):
         env["ANTHROPIC_BASE_URL"] = llm["base_url"]
+        # Tell the CLI this is a proxy so it strips Anthropic-specific
+        # beta headers and features from the request.
+        env["CLAUDE_CODE_SIMULATE_PROXY_USAGE"] = "1"
     api_key_env = llm.get("api_key_env")
     if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
         # Forward the alternative key as ANTHROPIC_API_KEY for the SDK
