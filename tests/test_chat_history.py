@@ -308,6 +308,56 @@ async def test_history_preamble_is_empty_for_empty_history() -> None:
     print("test_history_preamble_is_empty_for_empty_history: OK")
 
 
+async def test_preamble_includes_thinking_and_tool_calls() -> None:
+    """Assistant turns with thinking and tool_calls must surface that
+    context in the preamble so the agent doesn't lose its reasoning."""
+    t = chat_history.Turn(
+        role="assistant",
+        content="Fixed the bug.",
+        thinking=["short thought", "I concluded the root cause is X"],
+        tool_calls=[
+            {"name": "edit_file", "status": "ok"},
+            {"name": "git_commit", "status": "ok"},
+        ],
+    )
+    preamble = chat_history.history_preamble([t])
+    assert "I concluded the root cause is X" in preamble
+    assert "edit_file(ok)" in preamble
+    assert "git_commit(ok)" in preamble
+    print("test_preamble_includes_thinking_and_tool_calls: OK")
+
+
+async def test_preamble_includes_tool_only_turns() -> None:
+    """Turns where the assistant used tools but produced no prose must
+    still appear — this is the core bug where context was lost."""
+    t = chat_history.Turn(
+        role="assistant",
+        content="",
+        thinking=["Applying the fix now"],
+        tool_calls=[{"name": "edit_file", "status": "ok"}],
+    )
+    preamble = chat_history.history_preamble([t])
+    assert preamble != ""
+    assert "Applying the fix now" in preamble
+    assert "edit_file(ok)" in preamble
+    print("test_preamble_includes_tool_only_turns: OK")
+
+
+async def test_preamble_truncates_long_thinking() -> None:
+    """Thinking snippets longer than 300 chars are truncated."""
+    long_thought = "x" * 500
+    t = chat_history.Turn(
+        role="assistant",
+        content="done",
+        thinking=[long_thought],
+    )
+    preamble = chat_history.history_preamble([t])
+    # Should be capped at 300 + ellipsis
+    assert "x" * 300 + "…" in preamble
+    assert "x" * 301 not in preamble
+    print("test_preamble_truncates_long_thinking: OK")
+
+
 # ---------- /new rotates: current session persists, new one starts fresh ----------
 
 
@@ -355,6 +405,9 @@ async def amain() -> None:
         test_load_session_returns_none_for_missing_id,
         test_resume_round_trip_supports_history_preamble,
         test_history_preamble_is_empty_for_empty_history,
+        test_preamble_includes_thinking_and_tool_calls,
+        test_preamble_includes_tool_only_turns,
+        test_preamble_truncates_long_thinking,
         test_rotate_flow_preserves_old_session_on_disk,
     ]
     for t in tests:

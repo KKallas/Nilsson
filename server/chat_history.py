@@ -465,13 +465,36 @@ def history_preamble(turns: Iterable[Turn]) -> str:
     we don't simulate an API conversation because re-querying prior
     turns through the SDK would re-execute their tool calls. The LLM
     is told these are for context only.
+
+    For assistant turns we also include:
+    - a compact tool-call summary (name + status) so the agent knows
+      what was already executed,
+    - the last thinking snippet (truncated) so the reasoning chain
+      survives across turns.
     """
+    _THINKING_CAP = 300  # chars — keep preamble lean
+
     lines: list[str] = []
     for t in turns:
-        if not t.content.strip():
-            continue
         label = "User" if t.role == "user" else "Assistant"
-        lines.append(f"{label}: {t.content.strip()}")
+        parts: list[str] = []
+        if t.content.strip():
+            parts.append(t.content.strip())
+        if t.thinking:
+            snippet = t.thinking[-1].strip()
+            if len(snippet) > _THINKING_CAP:
+                snippet = snippet[:_THINKING_CAP] + "…"
+            parts.append(f"[Thinking: {snippet}]")
+        if t.tool_calls:
+            summaries = []
+            for tc in t.tool_calls:
+                name = tc.get("name", "?")
+                status = tc.get("status", "")
+                summaries.append(f"{name}({status})" if status else name)
+            parts.append(f"[Tools used: {', '.join(summaries)}]")
+        if not parts:
+            continue
+        lines.append(f"{label}: " + "\n".join(parts))
     if not lines:
         return ""
     body = "\n\n".join(lines)
