@@ -51,9 +51,50 @@ def _load_system_prompt() -> str:
     return _cached_prompt
 
 
+def _detect_python_bin() -> str:
+    """Return 'python' or 'python3' — whichever is available."""
+    import shutil
+    if shutil.which("python"):
+        return "python"
+    return "python3"
+
+
+def _tool_prefix() -> str:
+    """Return the path prefix for tool scripts relative to PROJECT_DIR.
+
+    When Imp is a subfolder (IMP_DIR != PROJECT_DIR), tools live at e.g.
+    ``Imp/tools/...`` relative to CWD. Returns '' when they're the same.
+    """
+    from .paths import IMP_DIR, PROJECT_DIR
+
+    if IMP_DIR == PROJECT_DIR:
+        return ""
+    try:
+        rel = IMP_DIR.relative_to(PROJECT_DIR)
+        return str(rel) + "/"
+    except ValueError:
+        return str(IMP_DIR) + "/"
+
+
+# Cached at first prompt build
+_PYTHON: str | None = None
+_PREFIX: str | None = None
+
+
+def _get_python_and_prefix() -> tuple[str, str]:
+    """Return (python_binary, tool_path_prefix), cached."""
+    global _PYTHON, _PREFIX
+    if _PYTHON is None:
+        _PYTHON = _detect_python_bin()
+        _PREFIX = _tool_prefix()
+    return _PYTHON, _PREFIX  # type: ignore[return-value]
+
+
 def _build_system_prompt() -> str:
     """Load from file + append auto-discovered tool list."""
     import os
+
+    python, prefix = _get_python_and_prefix()
 
     base = ""
     if _PROMPT_FILE.exists():
@@ -64,11 +105,12 @@ def _build_system_prompt() -> str:
     # Inject runtime values
     port = os.environ.get("RENDER_PORT", "8421")
     base = base.replace("{{IMP_BASE_URL}}", f"http://127.0.0.1:{port}")
+    base = base.replace("python tools/", f"{python} {prefix}tools/")
 
     # Append available tools so Claude tries them before raw Bash
     try:
         import tools
-        tool_list = tools.build_tool_list_for_prompt()
+        tool_list = tools.build_tool_list_for_prompt(python=python, prefix=prefix)
         if tool_list:
             base += "\n\n" + tool_list
     except Exception:
@@ -77,7 +119,10 @@ def _build_system_prompt() -> str:
     # For non-Claude models: reinforce that tools are Bash commands, not functions
     llm_cfg = _load_llm_config()
     if llm_cfg.get("base_url"):
-        base += "\n\n" + _NON_CLAUDE_TOOL_ADDENDUM
+        addendum = _NON_CLAUDE_TOOL_ADDENDUM.replace("{python}", python).replace(
+            "{prefix}", prefix
+        )
+        base += "\n\n" + addendum
 
     return base
 
@@ -89,13 +134,13 @@ You have access to these built-in tools: **Bash**, **Read**, **Write**, **Edit**
 
 To run any tool script listed above, you MUST use the **Bash** tool with the full command. For example:
 
-- To list tools: use Bash with command `python3 tools/imp/list_tools.py --verbose`
-- To check LLM backend: use Bash with command `python3 tools/llm/current.py`
-- To run any tool: use Bash with command `python3 tools/<group>/<script>.py --args`
+- To list tools: use Bash with command `{python} {prefix}tools/imp/list_tools.py --verbose`
+- To check LLM backend: use Bash with command `{python} {prefix}tools/llm/current.py`
+- To run any tool: use Bash with command `{python} {prefix}tools/<group>/<script>.py --args`
 
 Do NOT call tool scripts as function names. They are NOT native functions. \
 They are Python scripts that must be executed via the Bash tool. \
-Always use `python3 tools/...` as a Bash command.
+Always use `{python} {prefix}tools/...` as a Bash command.
 """
 
 

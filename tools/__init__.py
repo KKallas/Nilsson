@@ -135,10 +135,16 @@ def _get_active_tools() -> list[str] | None:
     return None  # no filter = all active
 
 
-def build_tool_list_for_prompt() -> str:
+def build_tool_list_for_prompt(
+    python: str = "python", prefix: str = ""
+) -> str:
     """Auto-generate the 'Tools available' section for the system prompt.
 
     Only includes active tool groups (if activation is configured).
+
+    Args:
+        python: The python binary name (``python`` or ``python3``).
+        prefix: Path prefix for tools relative to CWD (e.g. ``Imp/``).
     """
     active = _get_active_tools()
 
@@ -148,7 +154,9 @@ def build_tool_list_for_prompt() -> str:
 
     lines: list[str] = ["## Available tools\n"]
     lines.append("Try these tool scripts FIRST before using raw `gh` or Bash.")
-    lines.append("Run them with: `python tools/<folder>/<script>.py --args`\n")
+    lines.append(
+        f"Run them with: `{python} {prefix}tools/<folder>/<script>.py --args`\n"
+    )
 
     for name, path in sorted(discover().items()):
         if active is not None and name not in active:
