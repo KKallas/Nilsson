@@ -219,13 +219,29 @@ _SAFE_TOOLS = {"Read", "Glob", "Grep", "LS", "View"}
 ConfirmFn = Callable[[str, str, str], Awaitable[bool]]
 
 
+def _coerce_tool_input(value: Any) -> dict[str, Any]:
+    """Return a dict view of an SDK tool input, parsing JSON strings if needed.
+
+    Non-Anthropic backends (OpenRouter, etc.) sometimes deliver tool input as
+    a JSON-encoded string instead of a parsed dict. Anything else -> {}.
+    """
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return value if isinstance(value, dict) else {}
+
+
 def _make_security_hook(confirm: Optional[ConfirmFn] = None):
     """Create a security hook closure that can request user confirmation.
 
     confirm(tool, description, preview) -> bool
     """
-    async def hook(tool_name: str, tool_input: dict[str, Any], context: Any) -> Any:
+    async def hook(tool_name: str, tool_input: Any, context: Any) -> Any:
         from claude_agent_sdk.types import PermissionResultAllow, PermissionResultDeny
+
+        tool_input = _coerce_tool_input(tool_input)
 
         # Read-only tools are always safe
         if tool_name in _SAFE_TOOLS:
@@ -455,8 +471,9 @@ async def dispatch(
                         # Register new tool calls in the tracker
                         if msg_tools and tracker is not None:
                             for block in msg_tools:
-                                cmd = (block.input or {}).get('command', '')[:80]
-                                desc = (block.input or {}).get('description', '')
+                                args = _coerce_tool_input(block.input)
+                                cmd = args.get('command', '')[:80]
+                                desc = args.get('description', '')
                                 print(f"[TRACE] ToolUseBlock id={block.id} name={_clean_tool_name(block.name)} cmd={cmd!r} desc={desc!r}", file=sys.stderr)
                             new_items = tracker.register_batch(msg_tools)
                             if not has_plan:

@@ -623,15 +623,8 @@ async def run_setup(
                         if isinstance(block, TextBlock):
                             assistant_text_parts.append(block.text)
                         elif isinstance(block, ToolUseBlock):
-                            # Non-Anthropic backends sometimes serialize tool input as a
-                            # JSON string instead of a dict — handle both.
-                            raw = block.input
-                            if isinstance(raw, str):
-                                try:
-                                    raw = json.loads(raw)
-                                except (json.JSONDecodeError, TypeError):
-                                    raw = {}
-                            args = raw if isinstance(raw, dict) else {}
+                            from .foreman_agent import _coerce_tool_input
+                            args = _coerce_tool_input(block.input)
                             desc = args.get("description", block.name)
                             pending_tools[block.id] = (block.name, time.time())
                             if tool_start:
