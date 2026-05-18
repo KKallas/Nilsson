@@ -3,7 +3,7 @@
 
 Inputs:
   --dry-run (flag): Show what would change without applying anything.
-  --repo: str — upstream Nilsson repo (default: read from .nilsson/upstream.json, or "KKallas/Imp").
+  --repo: str — upstream Nilsson repo (default: read from .nilsson/upstream.json, or "KKallas/Nilsson").
 
 Process:
   1. Reads .nilsson/upstream.json for the last synced commit and core paths
@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 PROJECT_DIR = Path(os.environ.get("NILSSON_PROJECT_DIR", str(ROOT)))
 UPSTREAM_JSON = PROJECT_DIR / ".nilsson" / "upstream.json"
 
-DEFAULT_REPO = "KKallas/Imp"
+DEFAULT_REPO = "KKallas/Nilsson"
 DEFAULT_CORE_PATHS = [
     "server/",
     "pipeline/",
