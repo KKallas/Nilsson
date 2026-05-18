@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a chart or diagram via the Imp render server.
+"""Render a chart or diagram via the Nilsson render server.
 
 Inputs:
   type (positional): Renderer name (mermaid, plotly, gantt, kanban, bar, scatter, burndown, comparison).

@@ -8,7 +8,7 @@ Inputs:
   --tool-group: str (repeatable) — tool group names to include.
 
 Process: Copies the specified workflows and tool groups into
-         .imp/presets/<name>/ with a manifest file.
+         .nilsson/presets/<name>/ with a manifest file.
 Output: Prints the preset path and contents."""
 import argparse
 import json
@@ -18,8 +18,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
-PRESETS_DIR = PROJECT_DIR / ".imp" / "presets"
+PROJECT_DIR = Path(os.environ.get("NILSSON_PROJECT_DIR", str(ROOT)))
+PRESETS_DIR = PROJECT_DIR / ".nilsson" / "presets"
 
 
 def main() -> int:

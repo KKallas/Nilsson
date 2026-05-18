@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List all available renderers on the Imp server.
+"""List all available renderers on the Nilsson server.
 
 Inputs:
   --port: int — server port (default: 8421).

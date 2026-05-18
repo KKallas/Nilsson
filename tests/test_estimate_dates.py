@@ -4,7 +4,7 @@ Run directly: `.venv/bin/python tests/test_estimate_dates.py`
 No pytest. Asserts → exit 0 on success, exit 1 on failure.
 
 Strategy: build a known enriched payload inline (no dependency on
-`.imp/enriched.json` existing), run estimate_in_place, and verify
+`.nilsson/enriched.json` existing), run estimate_in_place, and verify
 the synthesized fields + touched-issue list are correct. The gh
 push path is tested by monkey-patching `run_gh` with a scripted fake.
 """
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "pipeline"))
 import estimate_dates as ed  # noqa: E402
 
 TODAY = date(2026, 4, 15)
-_TMP_DIR = Path(tempfile.mkdtemp(prefix="imp-estdates-test-"))
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="nilsson-estdates-test-"))
 
 
 def _enriched_with_no_dates() -> dict:
@@ -91,8 +91,8 @@ def test_render_body_block_includes_only_set_fields() -> None:
     assert "end_date: 2026-04-14" in block
     # duration_days wasn't in the input — don't emit an empty row.
     assert "duration_days" not in block
-    assert block.startswith("<!-- imp:dates:begin -->")
-    assert block.endswith("<!-- imp:dates:end -->")
+    assert block.startswith("<!-- nilsson:dates:begin -->")
+    assert block.endswith("<!-- nilsson:dates:end -->")
     print("test_render_body_block_includes_only_set_fields: OK")
 
 
@@ -115,17 +115,17 @@ def test_upsert_body_block_appends_when_absent() -> None:
     # Original content preserved, block appended with a gap.
     assert "Some original body text." in new
     assert "Second line." in new
-    assert "<!-- imp:dates:begin -->" in new
-    assert new.count("<!-- imp:dates:begin -->") == 1
+    assert "<!-- nilsson:dates:begin -->" in new
+    assert new.count("<!-- nilsson:dates:begin -->") == 1
     print("test_upsert_body_block_appends_when_absent: OK")
 
 
 def test_upsert_body_block_replaces_when_present() -> None:
     body = (
         "Before\n\n"
-        "<!-- imp:dates:begin -->\n"
+        "<!-- nilsson:dates:begin -->\n"
         "start_date: 2026-04-01\n"
-        "<!-- imp:dates:end -->\n\n"
+        "<!-- nilsson:dates:end -->\n\n"
         "After"
     )
     new_block = ed.render_body_block(
@@ -139,14 +139,14 @@ def test_upsert_body_block_replaces_when_present() -> None:
     assert "2026-04-11" in new
     assert "2026-04-14" in new
     # Still exactly one block.
-    assert new.count("<!-- imp:dates:begin -->") == 1
+    assert new.count("<!-- nilsson:dates:begin -->") == 1
     print("test_upsert_body_block_replaces_when_present: OK")
 
 
 def test_upsert_body_block_handles_empty_body() -> None:
     block = ed.render_body_block({"start_date": "2026-04-11"})
     new = ed.upsert_body_block("", block)
-    assert "<!-- imp:dates:begin -->" in new
+    assert "<!-- nilsson:dates:begin -->" in new
     assert "start_date: 2026-04-11" in new
     print("test_upsert_body_block_handles_empty_body: OK")
 
@@ -244,7 +244,7 @@ def test_push_to_github_edits_only_touched_issues() -> None:
     # The --body argument must contain the dates block with real values.
     for call in fake.calls:
         body_idx = call.index("--body") + 1
-        assert "<!-- imp:dates:begin -->" in call[body_idx]
+        assert "<!-- nilsson:dates:begin -->" in call[body_idx]
         assert "start_date:" in call[body_idx]
     print("test_push_to_github_edits_only_touched_issues: OK")
 

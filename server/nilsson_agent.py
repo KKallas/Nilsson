@@ -1,0 +1,581 @@
+"""server/nilsson_agent.py — thin bridge to Claude Code.
+
+Claude Code runs natively with its own tools (Bash, Read, Write, etc.).
+Security is enforced via a ``can_use_tool`` hook that routes every
+tool use through ``intercept.py`` (whitelist + classify) and
+``guard.py`` (LLM approval for writes) with budget tracking.
+
+No MCP server. No hardcoded tool functions. The agent is just:
+  1. Load system prompt
+  2. Set up security hook
+  3. Run the SDK streaming loop
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shlex
+import sys
+import time
+from pathlib import Path
+from typing import Any, Awaitable, Callable, Optional
+
+from . import guard
+
+ROOT = Path(__file__).resolve().parent.parent
+_PROMPT_FILE = ROOT / "server" / "nilsson_prompt.md"
+
+# Re-export for backward compat (chat_ws.py, main.py import these)
+from .turn_ui import (  # noqa: F401, E402
+    PlanItem,
+    TurnUI,
+    ToolTracker as _ToolTracker,
+    clean_tool_name as _clean_tool_name,
+    format_tool_sig as _format_tool_sig,
+)
+
+
+# ---------- system prompt ----------
+
+
+_cached_prompt: str | None = None
+
+
+def _load_system_prompt() -> str:
+    """Return cached system prompt. Built once at first call."""
+    global _cached_prompt
+    if _cached_prompt is not None:
+        return _cached_prompt
+    _cached_prompt = _build_system_prompt()
+    return _cached_prompt
+
+
+def _detect_python_bin() -> str:
+    """Return 'python' or 'python3' — whichever is available."""
+    import shutil
+    if shutil.which("python"):
+        return "python"
+    return "python3"
+
+
+def _tool_prefix() -> str:
+    """Return the path prefix for tool scripts relative to PROJECT_DIR.
+
+    When Nilsson is a subfolder (NILSSON_DIR != PROJECT_DIR), tools live at e.g.
+    ``Nilsson/tools/...`` relative to CWD. Returns '' when they're the same.
+    """
+    from .paths import NILSSON_DIR, PROJECT_DIR
+
+    if NILSSON_DIR == PROJECT_DIR:
+        return ""
+    try:
+        rel = NILSSON_DIR.relative_to(PROJECT_DIR)
+        return str(rel) + "/"
+    except ValueError:
+        return str(NILSSON_DIR) + "/"
+
+
+# Cached at first prompt build
+_PYTHON: str | None = None
+_PREFIX: str | None = None
+
+
+def _get_python_and_prefix() -> tuple[str, str]:
+    """Return (python_binary, tool_path_prefix), cached."""
+    global _PYTHON, _PREFIX
+    if _PYTHON is None:
+        _PYTHON = _detect_python_bin()
+        _PREFIX = _tool_prefix()
+    return _PYTHON, _PREFIX  # type: ignore[return-value]
+
+
+def _build_system_prompt() -> str:
+    """Load from file + append auto-discovered tool list."""
+    import os
+
+    python, prefix = _get_python_and_prefix()
+
+    base = ""
+    if _PROMPT_FILE.exists():
+        base = _PROMPT_FILE.read_text()
+    else:
+        base = "You are Nilsson, an AI project manager."
+
+    # Inject runtime values
+    port = os.environ.get("RENDER_PORT", "8421")
+    base = base.replace("{{NILSSON_BASE_URL}}", f"http://127.0.0.1:{port}")
+    base = base.replace("python tools/", f"{python} {prefix}tools/")
+
+    # Append available tools so Claude tries them before raw Bash
+    try:
+        import tools
+        tool_list = tools.build_tool_list_for_prompt(python=python, prefix=prefix)
+        if tool_list:
+            base += "\n\n" + tool_list
+    except Exception:
+        pass
+
+    # For non-Claude models: reinforce that tools are Bash commands, not functions
+    llm_cfg = _load_llm_config()
+    if llm_cfg.get("base_url"):
+        addendum = _NON_CLAUDE_TOOL_ADDENDUM.replace("{python}", python).replace(
+            "{prefix}", prefix
+        )
+        base += "\n\n" + addendum
+
+    return base
+
+
+_NON_CLAUDE_TOOL_ADDENDUM = """\
+## CRITICAL: How to use tools
+
+You have access to these built-in tools: **Bash**, **Read**, **Write**, **Edit**, **Glob**, **Grep**.
+
+To run any tool script listed above, you MUST use the **Bash** tool with the full command. For example:
+
+- To list tools: use Bash with command `{python} {prefix}tools/nilsson/list_tools.py --verbose`
+- To check LLM backend: use Bash with command `{python} {prefix}tools/llm/current.py`
+- To run any tool: use Bash with command `{python} {prefix}tools/<group>/<script>.py --args`
+
+Do NOT call tool scripts as function names. They are NOT native functions. \
+They are Python scripts that must be executed via the Bash tool. \
+Always use `{python} {prefix}tools/...` as a Bash command.
+"""
+
+
+def reload_prompt() -> str:
+    """Force-rebuild and re-cache the system prompt. Called by reload_tools.py."""
+    global _cached_prompt
+    _cached_prompt = _build_system_prompt()
+    return _cached_prompt
+
+
+# ---------- LLM backend config ----------
+
+
+def _load_llm_config() -> dict[str, Any]:
+    """Read the ``llm`` block from ``.nilsson/config.json``, if present.
+
+    Returns a dict that may contain ``model``, ``base_url``, and
+    ``api_key_env``.  Empty dict when no custom backend is configured.
+    """
+    from .paths import PROJECT_DIR
+
+    cfg_file = PROJECT_DIR / ".nilsson" / "config.json"
+    if not cfg_file.exists():
+        return {}
+    try:
+        cfg = json.loads(cfg_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return cfg.get("llm") or {}
+
+
+def _resolve_api_key(api_key_env: str) -> str:
+    """Look up an API key from env, then OS keystore. Returns '' if not found."""
+    from . import keystore
+
+    value = os.environ.get(api_key_env, "")
+    if value:
+        return value
+    # Fall back to OS keychain
+    stored = keystore.get(api_key_env)
+    return stored or ""
+
+
+def _llm_sdk_kwargs(llm: dict[str, Any]) -> dict[str, Any]:
+    """Translate the ``llm`` config block into kwargs for ClaudeAgentOptions.
+
+    OpenRouter setup (per https://openrouter.ai/docs/guides/coding-agents/claude-code-integration):
+      ANTHROPIC_BASE_URL  = https://openrouter.ai/api   (NOT /api/v1)
+      ANTHROPIC_AUTH_TOKEN = <openrouter key>
+      ANTHROPIC_API_KEY   = ""                           (must be explicitly empty)
+    """
+    kwargs: dict[str, Any] = {}
+    if llm.get("model"):
+        kwargs["model"] = llm["model"]
+    env: dict[str, str] = {}
+    if llm.get("base_url"):
+        env["ANTHROPIC_BASE_URL"] = llm["base_url"]
+    api_key_env = llm.get("api_key_env")
+    if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
+        # OpenRouter (and similar proxies) use ANTHROPIC_AUTH_TOKEN
+        # and require ANTHROPIC_API_KEY to be explicitly empty.
+        key_value = _resolve_api_key(api_key_env)
+        if key_value:
+            env["ANTHROPIC_AUTH_TOKEN"] = key_value
+            env["ANTHROPIC_API_KEY"] = ""
+    if env:
+        kwargs["env"] = env
+    return kwargs
+
+
+# ---------- security hook ----------
+
+# Read-only tools that never need confirmation
+_SAFE_TOOLS = {"Read", "Glob", "Grep", "LS", "View"}
+
+ConfirmFn = Callable[[str, str, str], Awaitable[bool]]
+
+
+def _coerce_tool_input(value: Any) -> dict[str, Any]:
+    """Return a dict view of an SDK tool input, parsing JSON strings if needed.
+
+    Non-Anthropic backends (OpenRouter, etc.) sometimes deliver tool input as
+    a JSON-encoded string instead of a parsed dict. Anything else -> {}.
+    """
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _make_security_hook(confirm: Optional[ConfirmFn] = None):
+    """Create a security hook closure that can request user confirmation.
+
+    confirm(tool, description, preview) -> bool
+    """
+    async def hook(tool_name: str, tool_input: Any, context: Any) -> Any:
+        from claude_agent_sdk.types import PermissionResultAllow, PermissionResultDeny
+
+        tool_input = _coerce_tool_input(tool_input)
+
+        # Read-only tools are always safe
+        if tool_name in _SAFE_TOOLS:
+            return PermissionResultAllow(behavior="allow")
+
+        # Write/Edit tool — show diff preview
+        if tool_name == "Write" or tool_name == "Edit":
+            if confirm:
+                file_path = tool_input.get("file_path", "")
+                if tool_name == "Edit":
+                    import difflib
+                    old = tool_input.get("old_string", "")
+                    new = tool_input.get("new_string", "")
+                    old_lines = old.splitlines(keepends=True)
+                    new_lines = new.splitlines(keepends=True)
+                    diff_lines = list(difflib.unified_diff(old_lines, new_lines, n=2, lineterm=""))
+                    # Keep @@ headers and change lines, skip --- / +++ file headers
+                    preview = "\n".join(line.rstrip() for line in diff_lines if not line.startswith(("---", "+++")))
+                    desc = f"Edit {file_path}"
+                else:
+                    content = tool_input.get("content", "")
+                    lines = content.splitlines()
+                    preview = "@@ -0,0 +1," + str(len(lines)) + " @@\n" + "\n".join("+" + l for l in lines)
+                    desc = f"Write {file_path}"
+                approved = await confirm(tool_name, desc, preview)
+                if not approved:
+                    return PermissionResultDeny(behavior="deny", message="User rejected", interrupt=False)
+            return PermissionResultAllow(behavior="allow")
+
+        # Bash tool — show command
+        if tool_name == "Bash":
+            command = tool_input.get("command", "")
+            if not command.strip():
+                return PermissionResultAllow(behavior="allow")
+
+            # Classify
+            try:
+                argv = shlex.split(command)
+            except ValueError:
+                argv = command.split()
+
+            classification = guard.classify_command(argv) if argv else "read"
+
+            # Reads don't need confirmation
+            if classification == "read":
+                return PermissionResultAllow(behavior="allow")
+
+            # Writes need user confirmation
+            if confirm:
+                desc = tool_input.get("description", command[:80])
+                approved = await confirm(tool_name, desc, command)
+                if not approved:
+                    return PermissionResultDeny(behavior="deny", message="User rejected", interrupt=False)
+            return PermissionResultAllow(behavior="allow")
+
+        # Other tools — ask for confirmation if available
+        if confirm:
+            desc = tool_input.get("description", tool_name)
+            preview = str(tool_input)[:1000]
+            approved = await confirm(tool_name, desc, preview)
+            if not approved:
+                return PermissionResultDeny(behavior="deny", message="User rejected", interrupt=False)
+        return PermissionResultAllow(behavior="allow")
+
+    return hook
+
+
+# ---------- dispatch ----------
+
+
+SayFn = Callable[[str], Awaitable[None]]
+AskFn = Callable[[str], Awaitable[Optional[str]]]
+AskKeyFn = Callable[[str, str], Awaitable[Optional[str]]]  # (env_var, prompt) → key
+ThinkingFn = Callable[[str], Any]
+ChartFn = Callable[[dict[str, Any]], Awaitable[None]]
+
+
+class _NullAsyncContext:
+    async def __aenter__(self) -> None:
+        return None
+
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        return None
+
+
+async def dispatch(
+    user_text: str,
+    *,
+    say: SayFn,
+    ask: AskFn,
+    thinking: Optional[ThinkingFn] = None,
+    chart: Optional[ChartFn] = None,
+    history: Optional[list[Any]] = None,
+    turn_ui: Optional[TurnUI] = None,
+    confirm: Optional[ConfirmFn] = None,
+    ask_key: Optional[AskKeyFn] = None,
+) -> str:
+    """Run one Nilsson conversation turn.
+
+    Claude Code runs with native tools (Bash, Read, Write, etc.).
+    The ``_security_hook`` enforces guard + intercept + budgets on
+    every tool use. No MCP server needed.
+    """
+    from server import chat_history
+
+    print(f"[nilsson] dispatch: {user_text!r}", file=sys.stderr)
+
+    preamble = chat_history.history_preamble(history or [])
+    prompt_text = preamble + user_text if preamble else user_text
+
+    from claude_agent_sdk import (  # type: ignore[import-not-found]
+        AssistantMessage,
+        ClaudeAgentOptions,
+        ClaudeSDKClient,
+        ResultMessage,
+        TextBlock,
+        ThinkingBlock,
+        ToolUseBlock,
+        UserMessage,
+    )
+    from claude_agent_sdk.types import ToolResultBlock
+
+    ui = turn_ui or TurnUI()
+    tracker = _ToolTracker(ui) if turn_ui is not None else None
+
+    llm_cfg = _load_llm_config()
+
+    # If a custom backend needs an API key and we don't have one,
+    # prompt the user via the chat UI and store in OS keychain.
+    api_key_env = llm_cfg.get("api_key_env", "")
+    if api_key_env and api_key_env != "ANTHROPIC_API_KEY":
+        if not _resolve_api_key(api_key_env):
+            if ask_key:
+                provider = llm_cfg.get("base_url", "custom provider")
+                key = await ask_key(
+                    api_key_env,
+                    f"Paste your **{api_key_env}** for {provider}:",
+                )
+                if key:
+                    from . import keystore
+                    keystore.set(api_key_env, key)
+                else:
+                    await say("No API key provided. Cannot reach the LLM backend.")
+                    return ""
+            else:
+                await say(
+                    f"**{api_key_env}** is not set. "
+                    f"Export it in your shell or use `python tools/llm/set_key.py`."
+                )
+                return ""
+
+    llm_kwargs = _llm_sdk_kwargs(llm_cfg)
+    # Extended thinking is Anthropic-specific; disable for third-party backends
+    # to avoid SDK crashes on non-standard response formats.
+    use_thinking = not llm_cfg.get("base_url")
+
+    def _on_stderr(line: str) -> None:
+        print(f"[nilsson:cli] {line}", file=sys.stderr, end="")
+
+    options = ClaudeAgentOptions(
+        system_prompt=_load_system_prompt(),
+        can_use_tool=_make_security_hook(confirm),
+        max_turns=20,
+        stderr=_on_stderr,
+        **({"thinking": {"type": "enabled", "budget_tokens": 10000}} if use_thinking else {}),
+        **llm_kwargs,
+    )
+
+    cm_factory = thinking if thinking is not None else (lambda _label: _NullAsyncContext())
+
+    assistant_chunks: list[str] = []
+    tool_calls_seen: list[str] = []
+    has_plan = False
+    # Track pending tool calls by ID so we can match results
+    _pending_tool_ids: dict[str, tuple[str, float]] = {}  # id → (name, start_time)
+
+    try:
+        async with cm_factory("Nilsson"):
+            async with ClaudeSDKClient(options=options) as client:
+                await client.query(prompt_text)
+                async for message in client.receive_response():
+                    print(
+                        f"[nilsson] msg: {type(message).__name__} "
+                        f"blocks={[type(b).__name__ for b in getattr(message, 'content', [])]}"
+                        if hasattr(message, 'content') else
+                        f"[nilsson] msg: {type(message).__name__}",
+                        file=sys.stderr,
+                    )
+                    if isinstance(message, AssistantMessage):
+                        # Log model + error field for diagnostics
+                        _model = getattr(message, 'model', None)
+                        _error = getattr(message, 'error', None)
+                        if _model or _error:
+                            print(
+                                f"[nilsson] assistant: model={_model} error={_error}",
+                                file=sys.stderr,
+                            )
+                        msg_thinking: list[Any] = []
+                        msg_tools: list[Any] = []
+                        msg_results: list[Any] = []
+                        msg_text: list[Any] = []
+                        for block in message.content:
+                            if isinstance(block, ThinkingBlock):
+                                msg_thinking.append(block)
+                            elif isinstance(block, ToolUseBlock):
+                                tool_calls_seen.append(block.name)
+                                msg_tools.append(block)
+                            elif isinstance(block, ToolResultBlock):
+                                msg_results.append(block)
+                            elif isinstance(block, TextBlock):
+                                msg_text.append(block)
+                            else:
+                                # Log unknown block types for debugging
+                                print(
+                                    f"[nilsson] unknown block: {type(block).__name__}",
+                                    file=sys.stderr,
+                                )
+
+                        for b in msg_thinking:
+                            print(
+                                f"[nilsson] thinking block: {len(b.thinking)} chars, "
+                                f"preview={b.thinking[:80]!r}",
+                                file=sys.stderr,
+                            )
+                            await ui.thinking_update(b.thinking)
+
+                        # Register new tool calls in the tracker
+                        if msg_tools and tracker is not None:
+                            for block in msg_tools:
+                                args = _coerce_tool_input(block.input)
+                                cmd = args.get('command', '')[:80]
+                                desc = args.get('description', '')
+                                print(f"[TRACE] ToolUseBlock id={block.id} name={_clean_tool_name(block.name)} cmd={cmd!r} desc={desc!r}", file=sys.stderr)
+                            new_items = tracker.register_batch(msg_tools)
+                            if not has_plan:
+                                await ui.show_plan(tracker.plan_items)
+                                has_plan = True
+                            else:
+                                await ui.append_plan(new_items)
+                            for block in msg_tools:
+                                _pending_tool_ids[block.id] = (
+                                    _clean_tool_name(block.name),
+                                    time.monotonic(),
+                                )
+                                print(f"[TRACE] on_start id={block.id} name={_clean_tool_name(block.name)} pending_count={len(_pending_tool_ids)}", file=sys.stderr)
+                                await tracker.on_start(
+                                    _clean_tool_name(block.name)
+                                )
+
+                        # Match tool results to their calls (same message)
+                        for result_block in msg_results:
+                            print(f"[TRACE] ToolResultBlock(AssistantMsg) tool_use_id={result_block.tool_use_id} found={result_block.tool_use_id in _pending_tool_ids}", file=sys.stderr)
+                            entry = _pending_tool_ids.pop(
+                                result_block.tool_use_id, None
+                            )
+                            if entry and tracker is not None:
+                                tool_name, start_t = entry
+                                duration = time.monotonic() - start_t
+                                output = ""
+                                if isinstance(result_block.content, str):
+                                    output = result_block.content
+                                elif isinstance(result_block.content, list):
+                                    output = str(result_block.content)
+                                ok = not result_block.is_error
+                                print(f"[TRACE] on_done(AssistantMsg) name={tool_name} ok={ok}", file=sys.stderr)
+                                await tracker.on_done(
+                                    tool_name, ok, duration, output[:4000]
+                                )
+
+                        for b in msg_text:
+                            # Detect CLI error leaked as text
+                            if (
+                                b.text
+                                and len(b.text) < 200
+                                and ("is not an object" in b.text
+                                     or "undefined" in b.text.lower()
+                                     or "TypeError" in b.text)
+                            ):
+                                print(
+                                    f"[nilsson] CLI error in text: {b.text!r}",
+                                    file=sys.stderr,
+                                )
+                            assistant_chunks.append(b.text)
+                            if not msg_tools:
+                                await ui.stream_token(b.text)
+
+                    elif isinstance(message, UserMessage):
+                        for block in message.content:
+                            if isinstance(block, ToolResultBlock):
+                                print(f"[TRACE] ToolResultBlock(UserMsg) tool_use_id={block.tool_use_id} found={block.tool_use_id in _pending_tool_ids}", file=sys.stderr)
+                                entry = _pending_tool_ids.pop(
+                                    block.tool_use_id, None
+                                )
+                                if entry and tracker is not None:
+                                    tool_name, start_t = entry
+                                    duration = time.monotonic() - start_t
+                                    output = ""
+                                    if isinstance(block.content, str):
+                                        output = block.content
+                                    elif isinstance(block.content, list):
+                                        output = str(block.content)
+                                    ok = not block.is_error
+                                    print(f"[TRACE] on_done(UserMsg) name={tool_name} ok={ok}", file=sys.stderr)
+                                    await tracker.on_done(
+                                        tool_name, ok, duration, output[:4000]
+                                    )
+
+                    elif isinstance(message, ResultMessage):
+                        print(
+                            f"[nilsson] result: is_error={message.is_error} "
+                            f"stop_reason={getattr(message, 'stop_reason', None)} "
+                            f"num_turns={getattr(message, 'num_turns', None)} "
+                            f"result={str(getattr(message, 'result', ''))[:500]} "
+                            f"errors={getattr(message, 'errors', None)}",
+                            file=sys.stderr,
+                        )
+
+    except Exception as exc:  # noqa: BLE001
+        print(f"[nilsson] backend error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        await say(f"Nilsson backend error: {exc}")
+        return ""
+
+    reply = "".join(assistant_chunks).strip()
+
+    if turn_ui is not None:
+        if reply:
+            await ui.stream_end(reply)
+        elif tool_calls_seen:
+            await say(
+                f"_(Nilsson used {len(tool_calls_seen)} tool call(s) "
+                f"but produced no prose reply.)_"
+            )
+    else:
+        if reply:
+            await say(reply)
+
+    return reply

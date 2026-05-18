@@ -5,7 +5,7 @@ import socket
 import time
 from pathlib import Path
 
-SESSION_FILE = Path(".imp/remote_session.json")
+SESSION_FILE = Path(".nilsson/remote_session.json")
 DEFAULT_PORT = 8421
 
 
@@ -43,14 +43,14 @@ def run(context):
             "<h3>Developer Sync Active</h3>"
             "<p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p>"
             '<p style="margin:16px 0;">'
-            f'<a href="/imp-sync.py" download="imp-sync.py"'
+            f'<a href="/nilsson-sync.py" download="nilsson-sync.py"'
             ' style="display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff;'
             ' border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">'
-            "Download imp-sync.py</a></p>"
+            "Download nilsson-sync.py</a></p>"
             '<p style="font-size:13px;color:#8b949e;">'
             "Or copy this command:<br>"
             '<code id="sync-cmd" style="background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;">'
-            f"curl -o imp-sync.py {url}/imp-sync.py && python imp-sync.py</code></p>"
+            f"curl -o nilsson-sync.py {url}/nilsson-sync.py && python nilsson-sync.py</code></p>"
             '<p style="font-size:12px;color:#8b949e;margin-top:12px;">'
             "Syncing: tools/, workflows/, renderers/, public/</p>"
         ),

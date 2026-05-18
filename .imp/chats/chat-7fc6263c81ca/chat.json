@@ -1,0 +1,20 @@
+{
+  "id": "chat-7fc6263c81ca",
+  "title": "New chat",
+  "title_source": "fallback",
+  "created_at": "2026-05-04T18:43:51+00:00",
+  "last_active_at": "2026-05-04T18:47:40+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "can you think some for gui testing",
+      "timestamp": "2026-05-04T18:43:59+00:00"
+    },
+    {
+      "role": "user",
+      "content": "can you try out some thinking so I can test the gui parts",
+      "timestamp": "2026-05-04T18:47:40+00:00"
+    }
+  ]
+}

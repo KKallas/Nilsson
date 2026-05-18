@@ -56,7 +56,7 @@ async def _lifespan(app):
         print(f"[render] workflow resume failed: {exc}", file=sys.stderr)
     yield
 
-app = FastAPI(title="Imp Render Server", docs_url=None, redoc_url=None, lifespan=_lifespan)
+app = FastAPI(title="Nilsson Render Server", docs_url=None, redoc_url=None, lifespan=_lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])
 
 
@@ -169,7 +169,7 @@ async def llm_bootstrap(request: Request):
     """Configure LLM backend before setup starts.
 
     Accepts: {model, base_url, api_key_env, api_key}
-    Writes the llm block to .imp/config.json and stores the key in keychain.
+    Writes the llm block to .nilsson/config.json and stores the key in keychain.
     """
     data = await request.json()
     model = data.get("model", "")
@@ -210,8 +210,8 @@ async def llm_status():
 
 @app.post("/api/reload-prompt")
 async def reload_prompt():
-    """Force-reload the Foreman system prompt (re-scans tools and workflows)."""
-    from server.foreman_agent import reload_prompt
+    """Force-reload the Nilsson system prompt (re-scans tools and workflows)."""
+    from server.nilsson_agent import reload_prompt
     prompt = reload_prompt()
     return {"reloaded": True, "length": len(prompt)}
 
@@ -422,15 +422,15 @@ async def new_chat_with_context(request: Request):
                 code_lines = escaped.split("\n")
                 line_spans = "".join(f'<span class="line">{l}</span>' for l in code_lines)
                 file_blocks.append(
-                    f'<details class="imp-fold ok">'
+                    f'<details class="nilsson-fold ok">'
                     f'<summary>\U0001F4C4 {fpath} ({len(code_lines)} lines)</summary>'
-                    f'<pre class="imp-code">{line_spans}</pre></details>'
+                    f'<pre class="nilsson-code">{line_spans}</pre></details>'
                 )
             except Exception:
                 file_blocks.append(
-                    f'<details class="imp-fold error">'
+                    f'<details class="nilsson-fold error">'
                     f'<summary>\u274C {fpath} (could not read)</summary>'
-                    f'<pre class="imp-code"></pre></details>'
+                    f'<pre class="nilsson-code"></pre></details>'
                 )
 
     # Build the context turn
@@ -550,7 +550,7 @@ async def create_snapshot(chat_id: str, request: Request):
 
     # First snapshot: create branch from current HEAD
     if not session.branch:
-        branch_name = f"imp/{chat_id}"
+        branch_name = f"nilsson/{chat_id}"
         proc = await _aio.create_subprocess_exec(
             "git", "checkout", "-b", branch_name,
             cwd=str(_PROJECT_DIR),
@@ -737,7 +737,7 @@ async def create_issue_from_chat(chat_id: str):
     cfg = _load_imp_config()
     repo = cfg.get("repo", "")
     if not repo:
-        return {"error": "no repo configured in .imp/config.json"}
+        return {"error": "no repo configured in .nilsson/config.json"}
 
     try:
         proc = await _aio.create_subprocess_exec(
@@ -792,7 +792,7 @@ async def serve_artifact(chat_id: str, path: str):
 # ── activation API ─────────────────────────────────────────────────
 
 def _load_imp_config() -> dict:
-    cfg_file = _PROJECT_DIR / ".imp" / "config.json"
+    cfg_file = _PROJECT_DIR / ".nilsson" / "config.json"
     if cfg_file.exists():
         try:
             return json.loads(cfg_file.read_text())
@@ -801,7 +801,7 @@ def _load_imp_config() -> dict:
     return {}
 
 def _save_imp_config(cfg: dict) -> None:
-    cfg_file = _PROJECT_DIR / ".imp" / "config.json"
+    cfg_file = _PROJECT_DIR / ".nilsson" / "config.json"
     cfg_file.parent.mkdir(parents=True, exist_ok=True)
     cfg_file.write_text(json.dumps(cfg, indent=2))
 
@@ -835,9 +835,9 @@ async def toggle_active(request: Request):
     cfg[key] = active
     _save_imp_config(cfg)
 
-    # Reload foreman prompt so it picks up the change
+    # Reload nilsson prompt so it picks up the change
     try:
-        from server.foreman_agent import reload_prompt
+        from server.nilsson_agent import reload_prompt
         reload_prompt()
     except Exception:
         pass
@@ -2067,7 +2067,7 @@ async def sync_delete(path: str):
     return Response("not found", status_code=404)
 
 
-@app.get("/imp-sync.py")
+@app.get("/nilsson-sync.py")
 async def download_sync_script(request: Request):
     """Generate and serve the sync client script with server URL baked in."""
     from fastapi.responses import PlainTextResponse
@@ -2075,13 +2075,13 @@ async def download_sync_script(request: Request):
     server_url = f"http://{host}"
     script = _IMP_SYNC_SCRIPT.replace("{{SERVER_URL}}", server_url)
     return PlainTextResponse(script, media_type="text/plain",
-                             headers={"Content-Disposition": "attachment; filename=imp-sync.py"})
+                             headers={"Content-Disposition": "attachment; filename=nilsson-sync.py"})
 
 
 _IMP_SYNC_SCRIPT = r'''#!/usr/bin/env python3
-"""Imp Developer Sync — bidirectional file sync with Imp server.
+"""Nilsson Developer Sync — bidirectional file sync with Nilsson server.
 
-Drop this file in any folder and run:  python imp-sync.py
+Drop this file in any folder and run:  python nilsson-sync.py
 First run pulls all files. Then watches for changes on both sides.
 Ctrl+C to stop.
 
@@ -2106,7 +2106,7 @@ _local_state = {}  # path -> {"hash", "mtime"}
 
 
 def api(method, endpoint, data=None):
-    """Make an API call to the Imp server."""
+    """Make an API call to the Nilsson server."""
     url = f"{SERVER}{endpoint}"
     if data is not None:
         req = urllib.request.Request(
@@ -2336,7 +2336,7 @@ def sync_loop():
 
 def main():
     print("=" * 50)
-    print("  Imp Developer Sync")
+    print("  Nilsson Developer Sync")
     print(f"  Server: {SERVER}")
     print("=" * 50)
     print()
@@ -2380,7 +2380,7 @@ def main() -> None:
 
     import uvicorn
 
-    parser = argparse.ArgumentParser(description="Imp render server")
+    parser = argparse.ArgumentParser(description="Nilsson render server")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args()

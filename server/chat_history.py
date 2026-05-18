@@ -1,6 +1,6 @@
 """server/chat_history.py — multi-turn memory + disk persistence for chats.
 
-Foreman's `dispatch()` spins up a fresh `ClaudeSDKClient` every turn, so
+Nilsson's `dispatch()` spins up a fresh `ClaudeSDKClient` every turn, so
 without help from us the agent has zero memory of prior turns in the
 same chat session. This module provides that help in four pieces
 (KKallas/Imp#45):
@@ -8,7 +8,7 @@ same chat session. This module provides that help in four pieces
   1. `ChatSession` — in-memory turn history, capped so context can't
      grow without bound. The cap drops the oldest turns first.
   2. Disk persistence — sessions serialize to
-     `.imp/chats/<created_at>_<id>.json` so they survive restarts and
+     `.nilsson/chats/<created_at>_<id>.json` so they survive restarts and
      can be resumed.
   3. Title generation — a tiny LLM call picks a 3-6 word title for each
      chat after the first assistant reply. `title_source` ("agent" /
@@ -35,7 +35,7 @@ from typing import Any, Awaitable, Callable, Iterable, Optional
 from .paths import PROJECT_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
-CHATS_DIR = PROJECT_DIR / ".imp" / "chats"
+CHATS_DIR = PROJECT_DIR / ".nilsson" / "chats"
 
 # History cap — oldest turns drop first when either is exceeded.
 # A "turn" here is one user OR one assistant entry (not a pair).
@@ -57,7 +57,7 @@ def _safe_stem(created_at_iso: str) -> str:
     """Turn an ISO timestamp into a filesystem-safe directory stem.
     `2026-04-15T07:43:00+00:00` → `2026-04-15T07-43-00`."""
     # Drop the timezone suffix and replace colons so POSIX filesystems
-    # (and Windows, should Imp ever land there) don't choke.
+    # (and Windows, should Nilsson ever land there) don't choke.
     head = created_at_iso.split("+")[0].split("Z")[0]
     return head.replace(":", "-")
 
@@ -127,7 +127,7 @@ class ChatSession:
     created_at: str = field(default_factory=_utcnow_iso)
     last_active_at: str = field(default_factory=_utcnow_iso)
     repo: Optional[str] = None
-    branch: Optional[str] = None  # git branch name (e.g. "imp/chat-abc123")
+    branch: Optional[str] = None  # git branch name (e.g. "nilsson/chat-abc123")
     snapshots: list[dict[str, Any]] = field(default_factory=list)
     turns: list[Turn] = field(default_factory=list)
 
@@ -171,11 +171,11 @@ class ChatSession:
         return d
 
     def folder(self, base: Optional[Path] = None) -> Path:
-        """Return the chat folder: `.imp/chats/<id>/`."""
+        """Return the chat folder: `.nilsson/chats/<id>/`."""
         return (base or CHATS_DIR) / self.id
 
     def path(self, base: Optional[Path] = None) -> Path:
-        """Return the chat JSON path: `.imp/chats/<id>/chat.json`."""
+        """Return the chat JSON path: `.nilsson/chats/<id>/chat.json`."""
         return self.folder(base) / "chat.json"
 
     def artifacts_dir(self, base: Optional[Path] = None) -> Path:
@@ -251,7 +251,7 @@ def _total_chars(turns: Iterable[Turn]) -> int:
 
 def _new_chat_id() -> str:
     # Short enough to fit in a filename comfortably; unique enough that
-    # collisions aren't a concern for one-admin Imp.
+    # collisions aren't a concern for one-admin Nilsson.
     return "chat-" + uuid.uuid4().hex[:12]
 
 
@@ -266,7 +266,7 @@ def ensure_chats_dir(base: Optional[Path] = None) -> Path:
 
 def save_session(session: ChatSession, *, base: Optional[Path] = None) -> Path:
     """Write the session as pretty-printed JSON inside its folder.
-    `.imp/chats/<id>/chat.json`. Atomic write via tempfile rename.
+    `.nilsson/chats/<id>/chat.json`. Atomic write via tempfile rename.
     """
     folder = session.folder(base)
     folder.mkdir(parents=True, exist_ok=True)
@@ -283,7 +283,7 @@ def load_session(chat_id: str, *, base: Optional[Path] = None) -> Optional[ChatS
     if not d.exists():
         return None
 
-    # New format: .imp/chats/<id>/chat.json
+    # New format: .nilsson/chats/<id>/chat.json
     folder_path = d / chat_id / "chat.json"
     if folder_path.exists():
         try:
@@ -292,7 +292,7 @@ def load_session(chat_id: str, *, base: Optional[Path] = None) -> Optional[ChatS
             print(f"[chat_history] corrupt {folder_path}: {exc}", file=sys.stderr)
             return None
 
-    # Legacy format: .imp/chats/*_<id>.json
+    # Legacy format: .nilsson/chats/*_<id>.json
     for path in d.glob(f"*_{chat_id}.json"):
         try:
             session = ChatSession.from_dict(json.loads(path.read_text()))
@@ -387,7 +387,7 @@ def list_sessions(
     rows: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
 
-    # New format: .imp/chats/<id>/chat.json
+    # New format: .nilsson/chats/<id>/chat.json
     for subdir in d.iterdir():
         if not subdir.is_dir() or subdir.name.startswith(("_", ".")):
             continue
@@ -416,7 +416,7 @@ def list_sessions(
         except (json.JSONDecodeError, KeyError) as exc:
             print(f"[chat_history] skipping unreadable {chat_json}: {exc}", file=sys.stderr)
 
-    # Legacy format: .imp/chats/*_<id>.json
+    # Legacy format: .nilsson/chats/*_<id>.json
     for path in d.glob("*.json"):
         try:
             data = json.loads(path.read_text())
@@ -510,7 +510,7 @@ def history_preamble(turns: Iterable[Turn]) -> str:
 # ---------- agent-titled chats ----------
 
 # The titling call gets a separate system prompt so the LLM stays on
-# task — it's NOT acting as Foreman here, it's a labeling helper.
+# task — it's NOT acting as Nilsson here, it's a labeling helper.
 TITLE_SYSTEM_PROMPT = """\
 You are a helper that picks short, descriptive titles for chat \
 conversations in a project-management tool. You receive a snippet of a \

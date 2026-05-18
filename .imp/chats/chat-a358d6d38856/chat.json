@@ -1,0 +1,99 @@
+{
+  "id": "chat-a358d6d38856",
+  "title": "Weekly issues burndown chart",
+  "title_source": "agent",
+  "created_at": "2026-05-04T05:26:24+00:00",
+  "last_active_at": "2026-05-04T05:26:57+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "can you draw weeks burndown?",
+      "timestamp": "2026-05-04T05:26:37+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n<details class=\"thinking-block\"><summary>Thinking</summary><div class=\"thinking-content\">The user wants a weeks burndown chart. Let me first check what tools are available for this, particularly the burndown renderer.</div></details>\n\nLet me get the issue data and render a burndown chart for you.\n\n<details class=\"tool-block ok tool-1\"><summary>\u2705 Check burndown tool usage \u00b7 1.1s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Bash(command=\"python tools/render/burndown.py --help 2>&1\", description=\"Check burndown tool usage\")</div><div class=\"wf-step-output\"><pre><code>usage: burndown.py [-h] [--start START] [--end END] [--exclude EXCLUDE]\n                   [--port PORT]\n\nRender an issue burndown bar chart to the dashboard\n\noptions:\n  -h, --help         show this help message and exit\n  --start START      Start date YYYY-MM-DD (default: 7 days ago)\n  --end END          End date YYYY-MM-DD (default: today)\n  --exclude EXCLUDE  Comma-separated issue numbers to exclude (e.g.\n                     &quot;48,49,111&quot;)\n  --port PORT\n</code></pre>\n</div></details>\n\n\n\n<details class=\"tool-block ok tool-2\"><summary>\u2705 Check burndown tool usage \u00b7 0.6s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Bash(command=\"python tools/render/burndown.py --help 2>&1\", description=\"Check burndown tool usage\")</div><div class=\"wf-step-output\"><pre><code>usage: list_issues.py [-h] [--state {open,closed,all}] [--limit LIMIT]\n                      [--label LABEL] [--repo REPO]\n\nList GitHub issues\n\noptions:\n  -h, --help            show this help message and exit\n  --state {open,closed,all}\n  --limit LIMIT\n  --label LABEL\n  --repo REPO\n</code></pre>\n</div></details>\n\n\n\n<details class=\"thinking-block\"><summary>Thinking</summary><div class=\"thinking-content\">The burndown tool defaults to 7 days ago to today. The user said \"weeks burndown\" - I think they want a weekly burndown. Let me run it with the default settings first, which covers the last week. Or maybe they want multiple weeks? Let me just run the default burndown which covers the last 7 days (1 week).\n\nActually, \"weeks burndown\" might mean they want a burndown spanning several weeks. Let me set the start to maybe 4 weeks ago to give a broader view.</div></details>\n\n\n\n<details class=\"tool-block ok tool-3\"><summary>\u2705 Render 4-week burndown chart to dashboard \u00b7 1.6s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Bash(command=\"python tools/render/burndown.py --start 2026-04-06 --end 2026-05-04 2>&1\", description=\"Render 4-week burndown chart to dashboard\")</div><div class=\"wf-step-output\"><p>=== BURNDOWN BAR ===<br>Range: 2026-04-06 to 2026-05-04  |  Excluded: 0<br>  |  Closed: 91  |  Still Open: 13<br><a href=\"http://127.0.0.1:8421/public/charts/043ad3b2235c.html\">Open in dashboard</a><br><a href=\"http://127.0.0.1:8421/renderpng?src=/public/charts/043ad3b2235c.html\">Download PNG</a></p>\n</div></details>\n\nHere's your 4-week burndown (Apr 6 \u2192 May 4):\n\n- **91 issues closed** over the period\n- **13 still open**\n\n[Open in dashboard](http://127.0.0.1:8421/public/charts/043ad3b2235c.html) \u00b7 [Download PNG](http://127.0.0.1:8421/renderpng?src=/public/charts/043ad3b2235c.html)",
+      "timestamp": "2026-05-04T05:26:57+00:00",
+      "tool_calls": [
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --help 2>&1",
+            "description": "Check burndown tool usage"
+          },
+          "status": "ok",
+          "duration_s": 1.1167452080408111,
+          "output": "usage: burndown.py [-h] [--start START] [--end END] [--exclude EXCLUDE]\n                   [--port PORT]\n\nRender an issue burndown bar chart to the dashboard\n\noptions:\n  -h, --help         show this help message and exit\n  --start START      Start date YYYY-MM-DD (default: 7 days ago)\n  --end END          End date YYYY-MM-DD (default: today)\n  --exclude EXCLUDE  Comma-separated issue numbers to exclude (e.g.\n                     \"48,49,111\")\n  --port PORT"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python tools/github/list_issues.py --help 2>&1",
+            "description": "Check list_issues tool usage"
+          },
+          "status": "ok",
+          "duration_s": 0.55647716706153,
+          "output": "usage: list_issues.py [-h] [--state {open,closed,all}] [--limit LIMIT]\n                      [--label LABEL] [--repo REPO]\n\nList GitHub issues\n\noptions:\n  -h, --help            show this help message and exit\n  --state {open,closed,all}\n  --limit LIMIT\n  --label LABEL\n  --repo REPO"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --start 2026-04-06 --end 2026-05-04 2>&1",
+            "description": "Render 4-week burndown chart to dashboard"
+          },
+          "status": "ok",
+          "duration_s": 1.619290207978338,
+          "output": "=== BURNDOWN BAR ===\nRange: 2026-04-06 to 2026-05-04  |  Excluded: 0\n  |  Closed: 91  |  Still Open: 13\n[Open in dashboard](http://127.0.0.1:8421/public/charts/043ad3b2235c.html)\n[Download PNG](http://127.0.0.1:8421/renderpng?src=/public/charts/043ad3b2235c.html)"
+        }
+      ],
+      "thinking": [
+        "The user wants a weeks burndown chart. Let me first check what tools are available for this, particularly the burndown renderer.",
+        "The burndown tool defaults to 7 days ago to today. The user said \"weeks burndown\" - I think they want a weekly burndown. Let me run it with the default settings first, which covers the last week. Or maybe they want multiple weeks? Let me just run the default burndown which covers the last 7 days (1 week).\n\nActually, \"weeks burndown\" might mean they want a burndown spanning several weeks. Let me set the start to maybe 4 weeks ago to give a broader view."
+      ],
+      "blocks": [
+        {
+          "type": "thinking",
+          "text": "The user wants a weeks burndown chart. Let me first check what tools are available for this, particularly the burndown renderer."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --help 2>&1",
+            "description": "Check burndown tool usage"
+          },
+          "status": "ok",
+          "duration_s": 1.1167452080408111,
+          "output": "usage: burndown.py [-h] [--start START] [--end END] [--exclude EXCLUDE]\n                   [--port PORT]\n\nRender an issue burndown bar chart to the dashboard\n\noptions:\n  -h, --help         show this help message and exit\n  --start START      Start date YYYY-MM-DD (default: 7 days ago)\n  --end END          End date YYYY-MM-DD (default: today)\n  --exclude EXCLUDE  Comma-separated issue numbers to exclude (e.g.\n                     \"48,49,111\")\n  --port PORT"
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python tools/github/list_issues.py --help 2>&1",
+            "description": "Check list_issues tool usage"
+          },
+          "status": "ok",
+          "duration_s": 0.55647716706153,
+          "output": "usage: list_issues.py [-h] [--state {open,closed,all}] [--limit LIMIT]\n                      [--label LABEL] [--repo REPO]\n\nList GitHub issues\n\noptions:\n  -h, --help            show this help message and exit\n  --state {open,closed,all}\n  --limit LIMIT\n  --label LABEL\n  --repo REPO"
+        },
+        {
+          "type": "thinking",
+          "text": "The burndown tool defaults to 7 days ago to today. The user said \"weeks burndown\" - I think they want a weekly burndown. Let me run it with the default settings first, which covers the last week. Or maybe they want multiple weeks? Let me just run the default burndown which covers the last 7 days (1 week).\n\nActually, \"weeks burndown\" might mean they want a burndown spanning several weeks. Let me set the start to maybe 4 weeks ago to give a broader view."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --start 2026-04-06 --end 2026-05-04 2>&1",
+            "description": "Render 4-week burndown chart to dashboard"
+          },
+          "status": "ok",
+          "duration_s": 1.619290207978338,
+          "output": "=== BURNDOWN BAR ===\nRange: 2026-04-06 to 2026-05-04  |  Excluded: 0\n  |  Closed: 91  |  Still Open: 13\n[Open in dashboard](http://127.0.0.1:8421/public/charts/043ad3b2235c.html)\n[Download PNG](http://127.0.0.1:8421/renderpng?src=/public/charts/043ad3b2235c.html)"
+        }
+      ]
+    }
+  ]
+}

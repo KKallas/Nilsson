@@ -1,0 +1,117 @@
+"""Tests for server/nilsson_agent.py — thin agent with security hook.
+
+Run directly: `.venv/bin/python tests/test_foreman_agent.py`
+
+Tests the security hook (can_use_tool callback) which routes Bash
+commands through intercept (whitelist) and guard (LLM approval).
+"""
+
+from __future__ import annotations
+
+import asyncio
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from server import nilsson_agent  # noqa: E402
+
+
+# ---------- security hook tests ----------
+
+
+async def test_security_allows_non_bash_tools() -> None:
+    """Read, Write, Grep, etc. are always allowed."""
+    from claude_agent_sdk.types import PermissionResultAllow
+
+    result = await nilsson_agent._security_hook("Read", {"file_path": "/tmp/x"}, None)
+    assert result.behavior == "allow"
+
+    result = await nilsson_agent._security_hook("Write", {"file_path": "/tmp/x"}, None)
+    assert result.behavior == "allow"
+
+    result = await nilsson_agent._security_hook("Grep", {"pattern": "foo"}, None)
+    assert result.behavior == "allow"
+    print("test_security_allows_non_bash_tools: OK")
+
+
+async def test_security_allows_read_commands() -> None:
+    """echo, ls etc. are classified as reads and allowed."""
+    result = await nilsson_agent._security_hook(
+        "Bash", {"command": "echo hello"}, None
+    )
+    assert result.behavior == "allow"
+
+    result = await nilsson_agent._security_hook(
+        "Bash", {"command": "ls"}, None
+    )
+    assert result.behavior == "allow"
+    print("test_security_allows_read_commands: OK")
+
+
+async def test_security_allows_all_reads() -> None:
+    """All commands are allowed unless they're classified as writes."""
+    # gh api — allowed
+    result = await nilsson_agent._security_hook(
+        "Bash", {"command": "gh api repos/:owner/:repo/milestones"}, None
+    )
+    assert result.behavior == "allow"
+
+    # gh issue list — allowed (no blocking, just prompt recommends tools)
+    result = await nilsson_agent._security_hook(
+        "Bash", {"command": "gh issue list --state open"}, None
+    )
+    assert result.behavior == "allow"
+
+    # unknown commands — allowed (Claude decides, not us)
+    result = await nilsson_agent._security_hook(
+        "Bash", {"command": "rm -rf /"}, None
+    )
+    assert result.behavior == "allow"
+    print("test_security_allows_all_reads: OK")
+
+
+async def test_security_allows_empty_bash() -> None:
+    """Empty Bash commands are allowed (no-op)."""
+    result = await nilsson_agent._security_hook("Bash", {"command": ""}, None)
+    assert result.behavior == "allow"
+    print("test_security_allows_empty_bash: OK")
+
+
+async def test_load_system_prompt() -> None:
+    """System prompt loads from file."""
+    prompt = nilsson_agent._load_system_prompt()
+    assert "Nilsson" in prompt
+    assert len(prompt) > 100
+    print("test_load_system_prompt: OK")
+
+
+# ---------- runner ----------
+
+
+async def amain() -> None:
+    tests = [
+        test_security_allows_non_bash_tools,
+        test_security_allows_read_commands,
+        test_security_allows_all_reads,
+        test_security_allows_empty_bash,
+        test_load_system_prompt,
+    ]
+    for t in tests:
+        await t()
+    print(f"\nAll {len(tests)} nilsson-agent tests passed.")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(amain())
+    except AssertionError as e:
+        print(f"\nFAIL: {e}")
+        sys.exit(1)
+    except Exception as e:
+        import traceback
+        print(f"\nERROR: {type(e).__name__}: {e}")
+        traceback.print_exc()
+        sys.exit(1)

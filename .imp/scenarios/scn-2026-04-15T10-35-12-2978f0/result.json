@@ -1,0 +1,32 @@
+{
+  "ran_at": "2026-04-15T10:35:12.275885+00:00",
+  "baseline_hash": "sha256:946f6ac147b357c5",
+  "scenarios": [
+    {
+      "name": "uses copy",
+      "charts": [],
+      "metrics": [
+        [
+          "count",
+          "1"
+        ]
+      ],
+      "lists": [],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "uses date math",
+      "charts": [],
+      "metrics": [],
+      "lists": [],
+      "texts": [
+        [
+          "error",
+          "scenario raised: ImportError: import of 'time' is not allowed in scenarios"
+        ]
+      ],
+      "tables": []
+    }
+  ]
+}

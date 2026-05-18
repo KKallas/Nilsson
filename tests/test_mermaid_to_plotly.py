@@ -125,7 +125,7 @@ def test_parse_gantt_simple_sections() -> None:
 
 COMPLEX_GANTT = """\
 gantt
-    title KKallas/Imp — Imp Gantt
+    title KKallas/Imp — Nilsson Gantt
     dateFormat YYYY-MM-DD
     axisFormat %Y-%m-%d
     excludes weekends

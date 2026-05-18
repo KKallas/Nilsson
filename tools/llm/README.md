@@ -1,6 +1,6 @@
 # LLM backend configuration
 
-Tools for viewing and switching the LLM backend used by the Foreman agent.
+Tools for viewing and switching the LLM backend used by the Nilsson agent.
 
 ## Tools
 

@@ -1,0 +1,2 @@
+1 developer - only 1 issue can be solved in parallel at a time
+2 developers - up to 2 issues can be solved in parallel at a time

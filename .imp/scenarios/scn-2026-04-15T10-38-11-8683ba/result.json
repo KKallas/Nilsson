@@ -1,0 +1,45 @@
+{
+  "ran_at": "2026-04-15T10:38:11.223655+00:00",
+  "baseline_hash": "sha256:a690ad266aebdbe5",
+  "scenarios": [
+    {
+      "name": "as-is",
+      "charts": [],
+      "metrics": [],
+      "lists": [],
+      "texts": [
+        [
+          "error",
+          "scenario raised: KeyError: 'start_date'"
+        ]
+      ],
+      "tables": []
+    },
+    {
+      "name": "start 2 weeks from now",
+      "charts": [],
+      "metrics": [],
+      "lists": [],
+      "texts": [
+        [
+          "error",
+          "scenario raised: KeyError: 'start_date'"
+        ]
+      ],
+      "tables": []
+    },
+    {
+      "name": "4 devs not 2",
+      "charts": [],
+      "metrics": [],
+      "lists": [],
+      "texts": [
+        [
+          "error",
+          "scenario raised: KeyError: 'start_date'"
+        ]
+      ],
+      "tables": []
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 Each tool is a folder under ``tools/``.  Every ``.py`` file in the folder
 (except ``__init__.py``) is an **executable** — a runnable script.  Each
 executable can have a matching ``.md`` file as its prompt/config (the
-"stored" part that gets CRUD'd by the admin via Foreman).
+"stored" part that gets CRUD'd by the admin via Nilsson).
 
 Discovery scans for ``tools/*/`` directories.  CRUD operations manage
 the ``.md`` config files.  The reserved names ``new`` and ``delete``
@@ -123,7 +123,7 @@ def _get_active_tools() -> list[str] | None:
     """Return list of active tool groups from config, or None if no filter set."""
     import json
     from server.paths import PROJECT_DIR
-    cfg_file = PROJECT_DIR / ".imp" / "config.json"
+    cfg_file = PROJECT_DIR / ".nilsson" / "config.json"
     if cfg_file.exists():
         try:
             cfg = json.loads(cfg_file.read_text())
@@ -144,7 +144,7 @@ def build_tool_list_for_prompt(
 
     Args:
         python: The python binary name (``python`` or ``python3``).
-        prefix: Path prefix for tools relative to CWD (e.g. ``Imp/``).
+        prefix: Path prefix for tools relative to CWD (e.g. ``Nilsson/``).
     """
     active = _get_active_tools()
 

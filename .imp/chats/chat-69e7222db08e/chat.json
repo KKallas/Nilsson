@@ -1,0 +1,20 @@
+{
+  "id": "chat-69e7222db08e",
+  "title": "New chat",
+  "title_source": "fallback",
+  "created_at": "2026-05-04T05:27:15+00:00",
+  "last_active_at": "2026-05-04T05:27:15+00:00",
+  "repo": null,
+  "turns": [],
+  "branch": "imp/chat-69e7222db08e",
+  "snapshots": [
+    {
+      "name": "start point test",
+      "commit_hash": "7c852349fe957360698d046fcfb733d23a1e32e4",
+      "timestamp": "2026-05-04T05:27:29+00:00",
+      "changed_files": [
+        "README.md"
+      ]
+    }
+  ]
+}

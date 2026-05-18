@@ -1,6 +1,6 @@
 """pipeline/mermaid_to_plotly.py — parse mermaid gantt blocks into Plotly figures.
 
-The Foreman agent occasionally emits mermaid gantt syntax in chat replies.
+The Nilsson agent occasionally emits mermaid gantt syntax in chat replies.
 This module provides a line-based parser that converts those blocks into
 Plotly horizontal-bar figures for inline rendering.
 

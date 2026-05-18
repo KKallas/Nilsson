@@ -1,0 +1,106 @@
+{
+  "id": "chat-cc5764033984",
+  "title": "Five Day Burndown Chart Request",
+  "title_source": "agent",
+  "created_at": "2026-05-04T22:07:19+00:00",
+  "last_active_at": "2026-05-04T22:08:02+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "can you make last 5 days burndown chart for me?",
+      "timestamp": "2026-05-04T22:07:30+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "I'll create a burndown chart for the last 5 days. Let me first check what data sources are available for generating this chart.\n\n<details class=\"tool-block ok tool-1\"><summary>\u2705 List available render tools \u00b7 0.7s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Bash(command=\"python tools/imp/list_tools.py --group render --verbose\", description=\"List available render tools\")</div><div class=\"wf-step-output\"><pre><code>render/\n    bar_chart  \u2014 Render a bar chart and push it to the dashboard.\n    burndown  \u2014 Render an issue burndown bar chart and push it to the dashboard.\n    custom  \u2014 Push custom HTML to the dashboard.\n    list_renderers  \u2014 List all available renderers on the Imp server.\n    render  \u2014 Render a chart or diagram via the Imp render server.\n    table  \u2014 Render an interactive table and push it to the dashboard.\n\n6 tool(s) in 1 group(s).\n</code></pre>\n</div></details>\n\nPerfect! I can see there's a `burndown` tool available. Let me use it to create a burndown chart for the last 5 days.\n\n<details class=\"tool-block error tool-2\"><summary>\u274c Generate burndown chart for last 5 days \u00b7 0.1s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Bash(command=\"python tools/render/burndown.py --days 5\", description=\"Generate burndown chart for last 5 days\")</div><div class=\"wf-step-output\"><pre><code>Exit code 2\nusage: burndown.py [-h] [--start START] [--end END] [--exclude EXCLUDE]\n                   [--port PORT]\nburndown.py: error: unrecognized arguments: --days 5\n</code></pre>\n</div></details>\n\nLet me check the correct parameters for the burndown tool:\n\n<details class=\"tool-block ok tool-3\"><summary>\u2705 Read \u00b7 0.0s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Read(file_path=\"/Users/kasparkallas/Documents/GitHub/Imp/tools/render/burndown.py\")</div><div class=\"wf-step-output\"><pre><code>1\t#!/usr/bin/env python3\n2\t&quot;&quot;&quot;Render an issue burndown bar chart and push it to the dashboard.\n3\t\n4\tInputs:\n5\t  --start: str \u2014 start date (YYYY-MM-DD). Default: 7 days ago.\n6\t  --end: str \u2014 end date (YYYY-MM-DD). Default: today.\n7\t  --exclude: str \u2014 comma-separated issue numbers to exclude (e.g. &quot;48,49,111&quot;).\n8\t  --port: int \u2014 server port (default: 8421).\n9\t\n10\tProcess:\n11\t  1. Fetches all issues (open + closed) from GitHub via `gh`.\n12\t  2. Computes daily open-issue count, new issues, and closed issues.\n13\t  3. Renders a Frappe line chart with actual remaining, opened, closed, and ideal lines.\n14\t\n15\tOutput: Prints dashboard link.&quot;&quot;&quot;\n16\timport argparse\n17\timport hashlib\n18\timport json\n19\timport subprocess\n20\timport sys\n21\timport time\n22\tfrom datetime import date, datetime, timedelta, timezone\n23\tfrom pathlib import Path\n24\t\n25\t\n26\tdef fetch_issues() -&gt; list[dict]:\n27\t    &quot;&quot;&quot;Fetch all issues (open + closed, up to 200) with timestamps.&quot;&quot;&quot;\n28\t    cmd = [\n29\t        &quot;gh&quot;, &quot;issue&quot;, &quot;list&quot;, &quot;--state&quot;, &quot;all&quot;, &quot;--limit&quot;, &quot;200&quot;,\n30\t        &quot;--json&quot;, &quot;number,title,state,createdAt,closedAt&quot;,\n31\t    ]\n32\t    result = subprocess.run(cmd, capture_output=True, text=True)\n33\t    if result.returncode != 0:\n34\t        print(f&quot;gh error: {result.stderr}&quot;, file=sys.stderr)\n35\t        return []\n36\t    return json.loads(result.stdout)\n37\t\n38\t\n39\tdef compute_daily_stats(\n40\t    issues: list[dict], start: date, end: date, exclude: set[int],\n41\t) -&gt; dict:\n42\t    &quot;&quot;&quot;Return daily open/new/closed counts for the date range.&quot;&quot;&quot;\n43\t    filtered = [i for i in issues if i.get(&quot;number&quot;) not in exclude]\n44\t\n45\t    days = (end - start).days + 1\n46\t    labels: list[str] = []\n47\t    open_eod: list[int] = []\n48\t    new_day: list[int] = []\n49\t    closed_day: list[int] = []\n50\t\n51\t    for offset in range(days):\n52\t        d = start + timedelta(days=offset)\n53\t        sod = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)\n54\t        eod = sod + timedelta(days=1)\n55\t\n56\t        open_count = 0\n57\n</code></pre>\n</div></details>\n\nNow I can see the correct parameters. The tool uses `--start` and `--end` dates rather than `--days`. Let me calculate the date range for the last 5 days and run the burndown chart.\n\n<details class=\"tool-block ok tool-4\"><summary>\u2705 Generate burndown chart for last 5 days \u00b7 1.3s</summary><div style=\"padding:4px 10px;font-size:11px;color:var(--muted);font-family:monospace;border-bottom:1px solid var(--border);\">Bash(command=\"python tools/render/burndown.py --start $(date -v-4d +%Y-%m-%d) --end $(date +%Y-%m-%d)\", description=\"Generate burndown chart for last 5 days\")</div><div class=\"wf-step-output\"><p>=== BURNDOWN BAR ===<br>Range: 2026-05-01 to 2026-05-05  |  Excluded: 0<br>  |  Closed: 27  |  Still Open: 10<br><a href=\"http://127.0.0.1:8421/public/charts/bcc7a516b5d6.html\">Open in dashboard</a><br><a href=\"http://127.0.0.1:8421/renderpng?src=/public/charts/bcc7a516b5d6.html\">Download PNG</a></p>\n</div></details>\n\nPerfect! I've created a burndown chart for the last 5 days (May 1st to May 5th, 2026). Here are the key metrics:\n\n- **Range**: May 1-5, 2026\n- **Closed Issues**: 27\n- **Still Open**: 10 issues remaining\n\nThe chart shows the issue burndown with lines for:\n- Open issues over time\n- New issues created each day\n- Issues closed each day\n- Ideal burndown trend line\n\nYou can view the interactive chart in the dashboard or download it as a PNG using the links provided.",
+      "timestamp": "2026-05-04T22:08:02+00:00",
+      "tool_calls": [
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python tools/imp/list_tools.py --group render --verbose",
+            "description": "List available render tools"
+          },
+          "status": "ok",
+          "duration_s": 0.6530964159173891,
+          "output": "  render/\n    bar_chart  \u2014 Render a bar chart and push it to the dashboard.\n    burndown  \u2014 Render an issue burndown bar chart and push it to the dashboard.\n    custom  \u2014 Push custom HTML to the dashboard.\n    list_renderers  \u2014 List all available renderers on the Imp server.\n    render  \u2014 Render a chart or diagram via the Imp render server.\n    table  \u2014 Render an interactive table and push it to the dashboard.\n\n6 tool(s) in 1 group(s)."
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --days 5",
+            "description": "Generate burndown chart for last 5 days"
+          },
+          "status": "error",
+          "duration_s": 0.13836004200857133,
+          "output": "Exit code 2\nusage: burndown.py [-h] [--start START] [--end END] [--exclude EXCLUDE]\n                   [--port PORT]\nburndown.py: error: unrecognized arguments: --days 5"
+        },
+        {
+          "name": "Read",
+          "args": {
+            "file_path": "/Users/kasparkallas/Documents/GitHub/Imp/tools/render/burndown.py"
+          },
+          "status": "ok",
+          "duration_s": 0.03812416596338153,
+          "output": "1\t#!/usr/bin/env python3\n2\t\"\"\"Render an issue burndown bar chart and push it to the dashboard.\n3\t\n4\tInputs:\n5\t  --start: str \u2014 start date (YYYY-MM-DD). Default: 7 days ago.\n6\t  --end: str \u2014 end date (YYYY-MM-DD). Default: today.\n7\t  --exclude: str \u2014 comma-separated issue numbers to exclude (e.g. \"48,49,111\").\n8\t  --port: int \u2014 server port (default: 8421).\n9\t\n10\tProcess:\n11\t  1. Fetches all issues (open + closed) from GitHub via `gh`.\n12\t  2. Computes daily open-issue count, new issues, and closed issues.\n13\t  3. Renders a Frappe line chart with actual remaining, opened, closed, and ideal lines.\n14\t\n15\tOutput: Prints dashboard link.\"\"\"\n16\timport argparse\n17\timport hashlib\n18\timport json\n19\timport subprocess\n20\timport sys\n21\timport time\n22\tfrom datetime import date, datetime, timedelta, timezone\n23\tfrom pathlib import Path\n24\t\n25\t\n26\tdef fetch_issues() -> list[dict]:\n27\t    \"\"\"Fetch all issues (open + closed, up to 200) with timestamps.\"\"\"\n28\t    cmd = [\n29\t        \"gh\", \"issue\", \"list\", \"--state\", \"all\", \"--limit\", \"200\",\n30\t        \"--json\", \"number,title,state,createdAt,closedAt\",\n31\t    ]\n32\t    result = subprocess.run(cmd, capture_output=True, text=True)\n33\t    if result.returncode != 0:\n34\t        print(f\"gh error: {result.stderr}\", file=sys.stderr)\n35\t        return []\n36\t    return json.loads(result.stdout)\n37\t\n38\t\n39\tdef compute_daily_stats(\n40\t    issues: list[dict], start: date, end: date, exclude: set[int],\n41\t) -> dict:\n42\t    \"\"\"Return daily open/new/closed counts for the date range.\"\"\"\n43\t    filtered = [i for i in issues if i.get(\"number\") not in exclude]\n44\t\n45\t    days = (end - start).days + 1\n46\t    labels: list[str] = []\n47\t    open_eod: list[int] = []\n48\t    new_day: list[int] = []\n49\t    closed_day: list[int] = []\n50\t\n51\t    for offset in range(days):\n52\t        d = start + timedelta(days=offset)\n53\t        sod = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)\n54\t        eod = sod + timedelta(days=1)\n55\t\n56\t        open_count = 0\n57\t        new_count = 0\n58\t        closed_count = 0\n59\t\n60\t        for iss in filtered:\n61\t            created = datetime.fromisoformat(\n62\t                iss[\"createdAt\"].replace(\"+00:00\", \"+00:00\"),\n63\t            ).replace(tzinfo=timezone.utc) if iss.get(\"createdAt\") else None\n64\t            closed_at = datetime.fromisoformat(\n65\t                iss[\"closedAt\"].replace(\"+00:00\", \"+00:00\"),\n66\t            ).replace(tzinfo=timezone.utc) if iss.get(\"closedAt\") else None\n67\t\n68\t            if created is None:\n69\t                continue\n70\t\n71\t            # Was this issue open at end of day?\n72\t            if created < eod and (closed_at is None or closed_at >= eod):\n73\t                open_count += 1\n74\t\n75\t            # Was this issue created today?\n76\t            if sod <= created < eod:\n77\t                new_count += 1\n78\t\n79\t            # Was this issue closed today?\n80\t            if closed_at and sod <= closed_at < eod:\n81\t                closed_count += 1\n82\t\n83\t        labels.append(d.strftime(\"%b %d\"))\n84\t        open_eod.append(open_count)\n85\t        new_day.append(new_count)\n86\t        closed_day.append(closed_count)\n87\t\n88\t    return {\n89\t        \"labels\": labels,\n90\t        \"open_issues\": open_eod,\n91\t        \"new_issues\": new_day,\n92\t        \"closed_issues\": closed_day,\n93\t    }\n94\t\n95\t\n96\t# Frappe Charts v1.6.1 UMD \u2014 confirmed working CDN URL.\n97\t# v2 IIFE does NOT expose the global; v1.6.1 UMD exposes `frappe.Chart`.\n98\tTEMPLATE = \"\"\"\\\n99\t<!DOCTYPE html>\n100\t<html>\n101\t<head>\n102\t<meta charset=\"utf-8\">\n103\t<style>\n104\t  body {{ margin:0; padding:16px; background:#0d1117; color:#c9d1d9;\n105\t         font-family:-apple-system,BlinkMacSystemFont,sans-serif; }}\n106\t  .wrap {{ background:#161b22; border:1px solid #30363d; border-radius:8px;\n107\t           padding:20px; max-width:820px; margin:0 auto; }}\n108\t  h2 {{ margin:0 0 4px; color:#fff; font-size:20px; }}\n109\t  .sub {{ margin:0 0 16px; color:#888; font-size:13px; }}\n110\t  #chart {{ margin-bottom:16px; }}\n1"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --start $(date -v-4d +%Y-%m-%d) --end $(date +%Y-%m-%d)",
+            "description": "Generate burndown chart for last 5 days"
+          },
+          "status": "ok",
+          "duration_s": 1.2953226669924334,
+          "output": "=== BURNDOWN BAR ===\nRange: 2026-05-01 to 2026-05-05  |  Excluded: 0\n  |  Closed: 27  |  Still Open: 10\n[Open in dashboard](http://127.0.0.1:8421/public/charts/bcc7a516b5d6.html)\n[Download PNG](http://127.0.0.1:8421/renderpng?src=/public/charts/bcc7a516b5d6.html)"
+        }
+      ],
+      "blocks": [
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python tools/imp/list_tools.py --group render --verbose",
+            "description": "List available render tools"
+          },
+          "status": "ok",
+          "duration_s": 0.6530964159173891,
+          "output": "  render/\n    bar_chart  \u2014 Render a bar chart and push it to the dashboard.\n    burndown  \u2014 Render an issue burndown bar chart and push it to the dashboard.\n    custom  \u2014 Push custom HTML to the dashboard.\n    list_renderers  \u2014 List all available renderers on the Imp server.\n    render  \u2014 Render a chart or diagram via the Imp render server.\n    table  \u2014 Render an interactive table and push it to the dashboard.\n\n6 tool(s) in 1 group(s)."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --days 5",
+            "description": "Generate burndown chart for last 5 days"
+          },
+          "status": "error",
+          "duration_s": 0.13836004200857133,
+          "output": "Exit code 2\nusage: burndown.py [-h] [--start START] [--end END] [--exclude EXCLUDE]\n                   [--port PORT]\nburndown.py: error: unrecognized arguments: --days 5"
+        },
+        {
+          "type": "tool",
+          "name": "Read",
+          "args": {
+            "file_path": "/Users/kasparkallas/Documents/GitHub/Imp/tools/render/burndown.py"
+          },
+          "status": "ok",
+          "duration_s": 0.03812416596338153,
+          "output": "1\t#!/usr/bin/env python3\n2\t\"\"\"Render an issue burndown bar chart and push it to the dashboard.\n3\t\n4\tInputs:\n5\t  --start: str \u2014 start date (YYYY-MM-DD). Default: 7 days ago.\n6\t  --end: str \u2014 end date (YYYY-MM-DD). Default: today.\n7\t  --exclude: str \u2014 comma-separated issue numbers to exclude (e.g. \"48,49,111\").\n8\t  --port: int \u2014 server port (default: 8421).\n9\t\n10\tProcess:\n11\t  1. Fetches all issues (open + closed) from GitHub via `gh`.\n12\t  2. Computes daily open-issue count, new issues, and closed issues.\n13\t  3. Renders a Frappe line chart with actual remaining, opened, closed, and ideal lines.\n14\t\n15\tOutput: Prints dashboard link.\"\"\"\n16\timport argparse\n17\timport hashlib\n18\timport json\n19\timport subprocess\n20\timport sys\n21\timport time\n22\tfrom datetime import date, datetime, timedelta, timezone\n23\tfrom pathlib import Path\n24\t\n25\t\n26\tdef fetch_issues() -> list[dict]:\n27\t    \"\"\"Fetch all issues (open + closed, up to 200) with timestamps.\"\"\"\n28\t    cmd = [\n29\t        \"gh\", \"issue\", \"list\", \"--state\", \"all\", \"--limit\", \"200\",\n30\t        \"--json\", \"number,title,state,createdAt,closedAt\",\n31\t    ]\n32\t    result = subprocess.run(cmd, capture_output=True, text=True)\n33\t    if result.returncode != 0:\n34\t        print(f\"gh error: {result.stderr}\", file=sys.stderr)\n35\t        return []\n36\t    return json.loads(result.stdout)\n37\t\n38\t\n39\tdef compute_daily_stats(\n40\t    issues: list[dict], start: date, end: date, exclude: set[int],\n41\t) -> dict:\n42\t    \"\"\"Return daily open/new/closed counts for the date range.\"\"\"\n43\t    filtered = [i for i in issues if i.get(\"number\") not in exclude]\n44\t\n45\t    days = (end - start).days + 1\n46\t    labels: list[str] = []\n47\t    open_eod: list[int] = []\n48\t    new_day: list[int] = []\n49\t    closed_day: list[int] = []\n50\t\n51\t    for offset in range(days):\n52\t        d = start + timedelta(days=offset)\n53\t        sod = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)\n54\t        eod = sod + timedelta(days=1)\n55\t\n56\t        open_count = 0\n57\t        new_count = 0\n58\t        closed_count = 0\n59\t\n60\t        for iss in filtered:\n61\t            created = datetime.fromisoformat(\n62\t                iss[\"createdAt\"].replace(\"+00:00\", \"+00:00\"),\n63\t            ).replace(tzinfo=timezone.utc) if iss.get(\"createdAt\") else None\n64\t            closed_at = datetime.fromisoformat(\n65\t                iss[\"closedAt\"].replace(\"+00:00\", \"+00:00\"),\n66\t            ).replace(tzinfo=timezone.utc) if iss.get(\"closedAt\") else None\n67\t\n68\t            if created is None:\n69\t                continue\n70\t\n71\t            # Was this issue open at end of day?\n72\t            if created < eod and (closed_at is None or closed_at >= eod):\n73\t                open_count += 1\n74\t\n75\t            # Was this issue created today?\n76\t            if sod <= created < eod:\n77\t                new_count += 1\n78\t\n79\t            # Was this issue closed today?\n80\t            if closed_at and sod <= closed_at < eod:\n81\t                closed_count += 1\n82\t\n83\t        labels.append(d.strftime(\"%b %d\"))\n84\t        open_eod.append(open_count)\n85\t        new_day.append(new_count)\n86\t        closed_day.append(closed_count)\n87\t\n88\t    return {\n89\t        \"labels\": labels,\n90\t        \"open_issues\": open_eod,\n91\t        \"new_issues\": new_day,\n92\t        \"closed_issues\": closed_day,\n93\t    }\n94\t\n95\t\n96\t# Frappe Charts v1.6.1 UMD \u2014 confirmed working CDN URL.\n97\t# v2 IIFE does NOT expose the global; v1.6.1 UMD exposes `frappe.Chart`.\n98\tTEMPLATE = \"\"\"\\\n99\t<!DOCTYPE html>\n100\t<html>\n101\t<head>\n102\t<meta charset=\"utf-8\">\n103\t<style>\n104\t  body {{ margin:0; padding:16px; background:#0d1117; color:#c9d1d9;\n105\t         font-family:-apple-system,BlinkMacSystemFont,sans-serif; }}\n106\t  .wrap {{ background:#161b22; border:1px solid #30363d; border-radius:8px;\n107\t           padding:20px; max-width:820px; margin:0 auto; }}\n108\t  h2 {{ margin:0 0 4px; color:#fff; font-size:20px; }}\n109\t  .sub {{ margin:0 0 16px; color:#888; font-size:13px; }}\n110\t  #chart {{ margin-bottom:16px; }}\n1"
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python tools/render/burndown.py --start $(date -v-4d +%Y-%m-%d) --end $(date +%Y-%m-%d)",
+            "description": "Generate burndown chart for last 5 days"
+          },
+          "status": "ok",
+          "duration_s": 1.2953226669924334,
+          "output": "=== BURNDOWN BAR ===\nRange: 2026-05-01 to 2026-05-05  |  Excluded: 0\n  |  Closed: 27  |  Still Open: 10\n[Open in dashboard](http://127.0.0.1:8421/public/charts/bcc7a516b5d6.html)\n[Download PNG](http://127.0.0.1:8421/renderpng?src=/public/charts/bcc7a516b5d6.html)"
+        }
+      ]
+    }
+  ]
+}

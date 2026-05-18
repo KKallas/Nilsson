@@ -14,7 +14,7 @@ Covers:
   - Generator with a fake backend (no live LLM)
   - Active-scenario composition (apply_active_scenario round-trip)
 
-SESSIONS_DIR is redirected to a tempdir so the shared `.imp/scenarios/`
+SESSIONS_DIR is redirected to a tempdir so the shared `.nilsson/scenarios/`
 is never touched.
 """
 
@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT))
 
 from pipeline import scenarios as sc  # noqa: E402
 
-_TMP_DIR = Path(tempfile.mkdtemp(prefix="imp-scn-test-"))
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="nilsson-scn-test-"))
 sc.SESSIONS_DIR = _TMP_DIR / "scenarios"
 sc.ROOT = _TMP_DIR  # so active_scenario.json etc. land in the tempdir
 
@@ -57,7 +57,7 @@ def _baseline() -> dict:
             {
                 "number": 12,
                 "state": "OPEN",
-                "labels": [{"name": "area:pipeline"}, {"name": "imp:baseline"}],
+                "labels": [{"name": "area:pipeline"}, {"name": "nilsson:baseline"}],
                 "depends_on_parsed": [11],
                 "fields": {
                     "duration_days": {"value": 2, "source": "heuristic"},
@@ -462,7 +462,7 @@ def s2(data, out):
 
 async def test_apply_active_scenario_noop_when_no_commit() -> None:
     # Clear any active pointer from prior tests
-    active_ptr = sc.ROOT / ".imp" / "active_scenario.json"
+    active_ptr = sc.ROOT / ".nilsson" / "active_scenario.json"
     if active_ptr.exists():
         active_ptr.unlink()
     composed = sc.apply_active_scenario(_baseline())

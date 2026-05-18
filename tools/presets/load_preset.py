@@ -5,7 +5,7 @@ Inputs:
   --name: str — preset name to load.
   --force: overwrite existing workflows/tools if they conflict.
 
-Process: Copies workflows and tools from .imp/presets/<name>/ into
+Process: Copies workflows and tools from .nilsson/presets/<name>/ into
          the project's workflows/ and tools/ directories.
 Output: Prints what was installed."""
 import argparse
@@ -16,8 +16,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PROJECT_DIR = Path(os.environ.get("IMP_PROJECT_DIR", str(ROOT)))
-PRESETS_DIR = PROJECT_DIR / ".imp" / "presets"
+PROJECT_DIR = Path(os.environ.get("NILSSON_PROJECT_DIR", str(ROOT)))
+PRESETS_DIR = PROJECT_DIR / ".nilsson" / "presets"
 
 
 def main() -> int:

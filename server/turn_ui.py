@@ -1,6 +1,6 @@
 """server/turn_ui.py — per-event callback interface for agent turn rendering.
 
-The agent dispatch loop in foreman_agent.py fires callbacks on a TurnUI
+The agent dispatch loop in nilsson_agent.py fires callbacks on a TurnUI
 implementation at specific moments during a turn. A ToolTracker sits in
 between, translating raw tool-use blocks into structured PlanItem lifecycle
 events.
@@ -97,7 +97,7 @@ class TurnUI:
 class ToolTracker:
     """Bridge between the agent dispatch loop and a TurnUI.
 
-    The dispatch loop in foreman_agent.py hands raw tool-use blocks to
+    The dispatch loop in nilsson_agent.py hands raw tool-use blocks to
     register_batch(), which converts them into PlanItems. As each tool
     executes, on_start() and on_done() fire the corresponding
     tool_started / tool_finished callbacks on the TurnUI.

@@ -1,6 +1,6 @@
 """Google Sheets utility that manages a project-tracking spreadsheet with issues and pull_requests tabs.
 Inputs: authenticates via service_account.json (headless), credentials.json (OAuth2), or cached token.json; configuration stored in .sheet_config.json.
-Process: discovers or creates a spreadsheet named "Imp Project Tracker" on Google Drive, then exposes helpers for reading rows, appending rows, updating cells, and finding rows by integer ID.
+Process: discovers or creates a spreadsheet named "Nilsson Project Tracker" on Google Drive, then exposes helpers for reading rows, appending rows, updating cells, and finding rows by integer ID.
 Output: returns spreadsheet data as lists of strings, API response dicts from write operations, or integer IDs for new entries."""
 
 import json
@@ -25,7 +25,7 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
 TOOL_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = TOOL_DIR / ".sheet_config.json"
 
-SHEET_TITLE = "Imp Project Tracker"
+SHEET_TITLE = "Nilsson Project Tracker"
 
 ISSUES_TAB = "issues"
 PRS_TAB = "pull_requests"

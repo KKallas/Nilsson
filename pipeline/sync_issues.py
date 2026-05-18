@@ -4,15 +4,15 @@
 The visibility-pipeline entry point. Fetches every issue from the
 configured repo, fetches every item from the configured Projects-v2
 board (if there is one), merges them on issue number, and writes the
-result to `.imp/issues.json` for downstream pipeline scripts
+result to `.nilsson/issues.json` for downstream pipeline scripts
 (heuristics.py, render_chart.py, scenario.py).
 
 ## Inputs
 
-  - `.imp/config.json` for `repo`, `project_number`, `project_owner`.
+  - `.nilsson/config.json` for `repo`, `project_number`, `project_owner`.
     Set by the Setup Agent (P3.9) and project_bootstrap (P3.10).
 
-## Output shape (.imp/issues.json)
+## Output shape (.nilsson/issues.json)
 
   {
     "synced_at": "<ISO 8601 UTC timestamp>",
@@ -53,7 +53,7 @@ result to `.imp/issues.json` for downstream pipeline scripts
 
   No `gh` writes are issued. The script can run on a freshly-set-up
   repo without any guard / budget concern. It IS classified as a read
-  by `server/intercept.py` (PIPELINE_READ_SCRIPTS) — the Foreman
+  by `server/intercept.py` (PIPELINE_READ_SCRIPTS) — the Nilsson
   agent's `run_sync_issues` tool calls it without burning the edits
   or tasks budget.
 """
@@ -70,8 +70,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-CONFIG_FILE = ROOT / ".imp" / "config.json"
-OUTPUT_FILE = ROOT / ".imp" / "issues.json"
+CONFIG_FILE = ROOT / ".nilsson" / "config.json"
+OUTPUT_FILE = ROOT / ".nilsson" / "issues.json"
 
 DEFAULT_LIMIT = 1000
 
@@ -244,16 +244,16 @@ def merge_issues_with_fields(
     return issues
 
 
-# ---------- imp:dates body-block parser ----------
+# ---------- nilsson:dates body-block parser ----------
 #
 # pipeline/estimate_dates.py writes synthesised date fields into each
-# issue's body, inside `<!-- imp:dates:begin -->` / `<!-- imp:dates:end -->`
+# issue's body, inside `<!-- nilsson:dates:begin -->` / `<!-- nilsson:dates:end -->`
 # markers. Here we read them back on every sync so the estimate
 # round-trips cleanly. Project-board values (if a project is linked)
 # always win over body-block values — project data is authoritative.
 
 _IMP_DATES_BLOCK_RE = re.compile(
-    r"<!--\s*imp:dates:begin\s*-->(.*?)<!--\s*imp:dates:end\s*-->",
+    r"<!--\s*nilsson:dates:begin\s*-->(.*?)<!--\s*nilsson:dates:end\s*-->",
     re.DOTALL | re.IGNORECASE,
 )
 _IMP_DATES_LINE_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+?)\s*$")
@@ -264,7 +264,7 @@ _IMP_DATES_FIELDS: frozenset[str] = frozenset(
 
 def parse_imp_dates_block(body: str) -> dict[str, Any]:
     """Extract `start_date` / `end_date` / `duration_days` from an
-    imp:dates block inside `body`. Returns an empty dict when the
+    nilsson:dates block inside `body`. Returns an empty dict when the
     block is absent or malformed.
 
     `duration_days` is coerced to int when it looks like one — other
@@ -305,12 +305,12 @@ def sync(
     state: str = "all",
 ) -> dict[str, Any]:
     """Run the full sync. Returns the JSON dict that's also written to
-    `.imp/issues.json`."""
+    `.nilsson/issues.json`."""
     cfg = load_config()
     repo = cfg.get("repo")
     if not repo:
         raise RuntimeError(
-            "no `repo` in .imp/config.json — run the Setup Agent first"
+            "no `repo` in .nilsson/config.json — run the Setup Agent first"
         )
 
     issues = fetch_issues(repo, limit=limit, state=state)
@@ -327,7 +327,7 @@ def sync(
         for issue in issues:
             issue["fields"] = {}
 
-    # Merge any `<!-- imp:dates -->` block that estimate_dates.py
+    # Merge any `<!-- nilsson:dates -->` block that estimate_dates.py
     # pushed into the issue body on a previous run. Project-board
     # values (if present) always win — only fill keys the board left
     # unset — so the project remains the source of truth when both
@@ -382,7 +382,7 @@ def main() -> int:
 
     try:
         payload = sync(limit=args.limit, state=args.state)
-    except Exception as exc:  # noqa: BLE001 — surface to caller (Foreman)
+    except Exception as exc:  # noqa: BLE001 — surface to caller (Nilsson)
         print(str(exc), file=sys.stderr)
         return 1
 

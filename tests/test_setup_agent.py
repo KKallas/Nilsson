@@ -13,7 +13,7 @@ via monkey-patching `setup_agent._run_subprocess` so the tests don't
 depend on an actual `gh` CLI being authenticated in the test env.
 
 `CONFIG_FILE` is redirected to a tempdir so the tests don't clobber
-the real `.imp/config.json`.
+the real `.nilsson/config.json`.
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ sys.path.insert(0, str(ROOT))
 
 from server import setup_agent  # noqa: E402
 
-# Redirect config file so tests don't touch the real .imp/config.json
-_TMP_DIR = Path(tempfile.mkdtemp(prefix="imp-setup-test-"))
+# Redirect config file so tests don't touch the real .nilsson/config.json
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="nilsson-setup-test-"))
 setup_agent.CONFIG_FILE = _TMP_DIR / "config.json"
 
 
@@ -263,7 +263,7 @@ async def test_do_set_repo_refuses_when_gh_rejects() -> None:
 async def test_do_list_projects_parses_projects_object() -> None:
     _reset_config()
     payload = json.dumps(
-        {"projects": [{"number": 7, "title": "Imp"}]}
+        {"projects": [{"number": 7, "title": "Nilsson"}]}
     )
     fake = FakeSubprocess([(0, payload)])
     setup_agent._run_subprocess = fake

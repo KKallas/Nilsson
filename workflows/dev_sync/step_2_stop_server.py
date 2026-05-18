@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-SESSION_FILE = Path(".imp/remote_session.json")
+SESSION_FILE = Path(".nilsson/remote_session.json")
 
 
 def run(context):

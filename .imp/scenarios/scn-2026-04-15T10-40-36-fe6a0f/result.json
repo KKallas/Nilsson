@@ -1,0 +1,40 @@
+{
+  "ran_at": "2026-04-15T10:40:36.072321+00:00",
+  "baseline_hash": "sha256:011a92b784075015",
+  "scenarios": [
+    {
+      "name": "as-is",
+      "charts": [],
+      "metrics": [
+        [
+          "total duration",
+          "8 days"
+        ],
+        [
+          "issues without start_date",
+          "2"
+        ]
+      ],
+      "lists": [],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "delayed",
+      "charts": [],
+      "metrics": [
+        [
+          "total duration",
+          "8 days"
+        ],
+        [
+          "shifted",
+          "+14 days"
+        ]
+      ],
+      "lists": [],
+      "texts": [],
+      "tables": []
+    }
+  ]
+}

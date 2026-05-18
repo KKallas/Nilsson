@@ -13,22 +13,22 @@ estimate the chart draws from.
 
 ## Two modes
 
-  - **Default** (no flag): synthesize dates, update `.imp/enriched.json`
+  - **Default** (no flag): synthesize dates, update `.nilsson/enriched.json`
     in place, exit. Pure local — safe for CI, dry-runs, and testing.
 
   - **`--push`**: also edit every issue whose dates we synthesized,
-    updating its body to include an `<!-- imp:dates:begin -->` /
-    `<!-- imp:dates:end -->` block with the new values. Idempotent —
+    updating its body to include an `<!-- nilsson:dates:begin -->` /
+    `<!-- nilsson:dates:end -->` block with the new values. Idempotent —
     re-running replaces the block rather than appending.
 
 ## Body-block format
 
-    <!-- imp:dates:begin -->
+    <!-- nilsson:dates:begin -->
     <!-- Managed by pipeline/estimate_dates.py — do not edit this block. -->
     start_date: 2026-04-11
     end_date: 2026-04-14
     duration_days: 3
-    <!-- imp:dates:end -->
+    <!-- nilsson:dates:end -->
 
 `sync_issues.py` parses this block back into the issue's `fields` dict
 on the next sync, so the round-trip is seamless. `heuristics.py` then
@@ -41,7 +41,7 @@ project-board data.
 No GitHub side effects in the default mode. Classified as a read by
 `server/intercept.py` (see `PIPELINE_READ_SCRIPTS`). The `--push`
 path goes through `gh issue edit --body` per-issue, which hits the
-guard + edits budget like any other Foreman write.
+guard + edits budget like any other Nilsson write.
 """
 
 from __future__ import annotations
@@ -56,13 +56,13 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-ENRICHED_FILE = ROOT / ".imp" / "enriched.json"
+ENRICHED_FILE = ROOT / ".nilsson" / "enriched.json"
 
 
 # ---------- body-block format ----------
 
-BLOCK_BEGIN = "<!-- imp:dates:begin -->"
-BLOCK_END = "<!-- imp:dates:end -->"
+BLOCK_BEGIN = "<!-- nilsson:dates:begin -->"
+BLOCK_END = "<!-- nilsson:dates:end -->"
 BLOCK_HEADER_COMMENT = (
     "<!-- Managed by pipeline/estimate_dates.py — do not edit this block. -->"
 )
@@ -246,7 +246,7 @@ def push_to_github(
     """Write synthesised dates back to GH issue bodies.
 
     Returns a report dict with per-issue outcomes for the caller to
-    surface to the Foreman agent / admin.
+    surface to the Nilsson agent / admin.
     """
     repo = enriched.get("repo")
     if not repo:
@@ -296,7 +296,7 @@ def main() -> int:
         help=(
             "After estimating, write each synthesised issue's new dates "
             "back to GH via `gh issue edit --body` (upserts an "
-            "<!-- imp:dates --> block). Off by default — no GH side "
+            "<!-- nilsson:dates --> block). Off by default — no GH side "
             "effects unless this flag is set."
         ),
     )
@@ -334,8 +334,8 @@ def main() -> int:
     elif args.push:
         print("No issues needed updating — nothing to push.", file=sys.stderr)
 
-    # Final machine-readable line on stdout so Foreman's path parser
-    # (in server/foreman_agent.py) can pick up the count.
+    # Final machine-readable line on stdout so Nilsson's path parser
+    # (in server/nilsson_agent.py) can pick up the count.
     print(json.dumps({"estimated": len(touched), "pushed": args.push}))
     return 0
 

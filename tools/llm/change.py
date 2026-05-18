@@ -7,7 +7,7 @@ Inputs:
   --api-key-env: str — env var name holding the API key (default: ANTHROPIC_API_KEY).
   --reset: flag   — remove custom LLM config and revert to Anthropic defaults.
 
-Process: Writes the `llm` block in `.imp/config.json`. The Foreman agent
+Process: Writes the `llm` block in `.nilsson/config.json`. The Nilsson agent
          reads this on next dispatch to configure the SDK client.
 Output: Prints the updated LLM backend settings."""
 import argparse
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
-CONFIG_FILE = PROJECT_DIR / ".imp" / "config.json"
+CONFIG_FILE = PROJECT_DIR / ".nilsson" / "config.json"
 
 
 def _load_config() -> dict:
@@ -72,7 +72,7 @@ def main() -> int:
 
     cfg["llm"] = llm
 
-    # Ensure the llm tool group is active so Foreman can discover it
+    # Ensure the llm tool group is active so Nilsson can discover it
     active = cfg.get("active_tools")
     if isinstance(active, list) and "llm" not in active:
         active.append("llm")

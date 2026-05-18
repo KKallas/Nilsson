@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""pipeline/project_bootstrap.py — provision the Imp Projects-v2 board.
+"""pipeline/project_bootstrap.py — provision the Nilsson Projects-v2 board.
 
 The script the Setup Agent calls (via `server.setup_agent.do_create_imp_project`)
 to stand up the admin's Projects-v2 board on first run and verify it on
@@ -8,7 +8,7 @@ board, skip fields that already exist, and only create the gaps.
 
 ## What it does
 
-1. Finds or creates a Projects-v2 board titled `<--title>` (default `Imp`)
+1. Finds or creates a Projects-v2 board titled `<--title>` (default `Nilsson`)
    under `<--owner>` (user or org login).
 2. Reads the canonical field definitions from `templates/fields.json`.
 3. Checks each template field against the board:
@@ -22,7 +22,7 @@ board, skip fields that already exist, and only create the gaps.
        create it fresh from the template
      - `skip` — log and proceed as-is (may cause runtime errors later
        when pipeline scripts try to write incompatible values)
-4. Persists `project_number` and `project_owner` to `.imp/config.json`
+4. Persists `project_number` and `project_owner` to `.nilsson/config.json`
    so the worker and pipeline scripts know which board to talk to.
 
 ## Prerequisites
@@ -57,7 +57,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-CONFIG_FILE = ROOT / ".imp" / "config.json"
+CONFIG_FILE = ROOT / ".nilsson" / "config.json"
 FIELDS_TEMPLATE = ROOT / "renderers" / "fields.json"
 
 GH_PROJECT_LIST_LIMIT = 100
@@ -492,8 +492,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--title",
-        default="Imp",
-        help="Project title (default: Imp)",
+        default="Nilsson",
+        help="Project title (default: Nilsson)",
     )
     parser.add_argument(
         "--on-conflict",

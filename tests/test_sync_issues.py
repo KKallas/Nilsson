@@ -7,7 +7,7 @@ Mocks `sync_issues.run_gh` with a scripted FakeGh — no real `gh` binary,
 no GitHub API calls.
 
 `CONFIG_FILE` and `OUTPUT_FILE` are redirected to a tempdir so the
-shared `.imp/` is never touched.
+shared `.nilsson/` is never touched.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "pipeline"))
 
 import sync_issues as si  # noqa: E402
 
-_TMP_DIR = Path(tempfile.mkdtemp(prefix="imp-sync-test-"))
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="nilsson-sync-test-"))
 si.CONFIG_FILE = _TMP_DIR / "config.json"
 si.OUTPUT_FILE = _TMP_DIR / "issues.json"
 
@@ -388,18 +388,18 @@ def test_write_output_creates_imp_dir_and_writes_json() -> None:
     print("test_write_output_creates_imp_dir_and_writes_json: OK")
 
 
-# ---------- imp:dates body-block parser ----------
+# ---------- nilsson:dates body-block parser ----------
 
 
 def test_parse_imp_dates_block_roundtrips_written_block() -> None:
     body = (
         "Original body.\n\n"
-        "<!-- imp:dates:begin -->\n"
+        "<!-- nilsson:dates:begin -->\n"
         "<!-- Managed by ... -->\n"
         "start_date: 2026-04-11\n"
         "end_date: 2026-04-14\n"
         "duration_days: 3\n"
-        "<!-- imp:dates:end -->\n"
+        "<!-- nilsson:dates:end -->\n"
     )
     parsed = si.parse_imp_dates_block(body)
     assert parsed == {
@@ -421,10 +421,10 @@ def test_parse_imp_dates_block_ignores_unknown_keys() -> None:
     """We only round-trip a known allowlist — arbitrary keys in the
     block shouldn't sneak into the fields dict."""
     body = (
-        "<!-- imp:dates:begin -->\n"
+        "<!-- nilsson:dates:begin -->\n"
         "start_date: 2026-04-11\n"
         "random_key: something\n"
-        "<!-- imp:dates:end -->"
+        "<!-- nilsson:dates:end -->"
     )
     assert si.parse_imp_dates_block(body) == {"start_date": "2026-04-11"}
     print("test_parse_imp_dates_block_ignores_unknown_keys: OK")
@@ -432,12 +432,12 @@ def test_parse_imp_dates_block_ignores_unknown_keys() -> None:
 
 def test_parse_imp_dates_block_skips_malformed_lines() -> None:
     body = (
-        "<!-- imp:dates:begin -->\n"
+        "<!-- nilsson:dates:begin -->\n"
         "start_date: 2026-04-11\n"
         "this line has no colon\n"
         "  \n"  # whitespace only
         "end_date: 2026-04-14\n"
-        "<!-- imp:dates:end -->"
+        "<!-- nilsson:dates:end -->"
     )
     assert si.parse_imp_dates_block(body) == {
         "start_date": "2026-04-11",
@@ -448,16 +448,16 @@ def test_parse_imp_dates_block_skips_malformed_lines() -> None:
 
 def test_parse_imp_dates_block_duration_days_coerced_to_int() -> None:
     body = (
-        "<!-- imp:dates:begin -->\n"
+        "<!-- nilsson:dates:begin -->\n"
         "duration_days: 7\n"
-        "<!-- imp:dates:end -->"
+        "<!-- nilsson:dates:end -->"
     )
     assert si.parse_imp_dates_block(body) == {"duration_days": 7}
     # Non-integer value is dropped, not kept as a string.
     body_bad = (
-        "<!-- imp:dates:begin -->\n"
+        "<!-- nilsson:dates:begin -->\n"
         "duration_days: seven\n"
-        "<!-- imp:dates:end -->"
+        "<!-- nilsson:dates:end -->"
     )
     assert si.parse_imp_dates_block(body_bad) == {}
     print("test_parse_imp_dates_block_duration_days_coerced_to_int: OK")
@@ -474,10 +474,10 @@ def test_sync_merges_imp_dates_block_when_no_project() -> None:
                 "number": 42,
                 "title": "t",
                 "body": (
-                    "<!-- imp:dates:begin -->\n"
+                    "<!-- nilsson:dates:begin -->\n"
                     "start_date: 2026-04-11\n"
                     "end_date: 2026-04-14\n"
-                    "<!-- imp:dates:end -->"
+                    "<!-- nilsson:dates:end -->"
                 ),
                 "labels": [],
                 "milestone": None,

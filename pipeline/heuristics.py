@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """pipeline/heuristics.py — infer durations, dependencies, delays.
 
-Reads `.imp/issues.json` (from `sync_issues.py`), enriches each issue
-with inferred fields, and writes `.imp/enriched.json` for downstream
+Reads `.nilsson/issues.json` (from `sync_issues.py`), enriches each issue
+with inferred fields, and writes `.nilsson/enriched.json` for downstream
 chart rendering and scenario analysis.
 
 ## What gets enriched
@@ -27,7 +27,7 @@ Two new top-level keys per issue:
     to stderr. Per v0.1.md, parse failures are soft — the issue is
     treated as having no known dependencies for that run, not aborted.
   - `delay` — only present when the issue is detected as delayed.
-    Comparing current `end_date` against today + the `imp:baseline`
+    Comparing current `end_date` against today + the `nilsson:baseline`
     label state (per the AC).
 
 A top-level `dependency_edges` array on the enriched payload makes the
@@ -35,14 +35,14 @@ graph easy for `render_chart.py` to consume directly.
 
 ## Stale-data guard
 
-The sync timestamp from `.imp/issues.json` is propagated unchanged to
-`.imp/enriched.json` plus a fresh `enriched_at` timestamp, so callers
+The sync timestamp from `.nilsson/issues.json` is propagated unchanged to
+`.nilsson/enriched.json` plus a fresh `enriched_at` timestamp, so callers
 can detect stale enrichment vs. stale sync independently.
 
 ## Read-only
 
 No GitHub side effects. Classified as a read by `server/intercept.py`
-(see PIPELINE_READ_SCRIPTS) — Foreman's `run_heuristics` tool runs it
+(see PIPELINE_READ_SCRIPTS) — Nilsson's `run_heuristics` tool runs it
 without burning the edits or tasks budget.
 """
 
@@ -57,8 +57,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-INPUT_FILE = ROOT / ".imp" / "issues.json"
-OUTPUT_FILE = ROOT / ".imp" / "enriched.json"
+INPUT_FILE = ROOT / ".nilsson" / "issues.json"
+OUTPUT_FILE = ROOT / ".nilsson" / "enriched.json"
 
 # Default duration in days when nothing else informs us.
 DEFAULT_DURATION_DAYS = 3
@@ -70,7 +70,7 @@ DURATION_HINT_BY_LABEL: dict[str, int] = {
     "area:server": 3,
     "area:pipeline": 2,
     "area:ui": 2,
-    "imp:baseline": 5,
+    "nilsson:baseline": 5,
 }
 
 
@@ -153,8 +153,8 @@ def detect_delay(
 ) -> dict[str, Any] | None:
     """Return a delay record if the issue is overdue per its baseline.
 
-    Per the AC: comparing current `end_date` to the `imp:baseline` label
-    state. We interpret that as: an issue with the `imp:baseline` label
+    Per the AC: comparing current `end_date` to the `nilsson:baseline` label
+    state. We interpret that as: an issue with the `nilsson:baseline` label
     that's still OPEN past its `end_date` is delayed. Issues without
     the label (newly added, scope creep, etc.) aren't subject to this
     check.
@@ -166,7 +166,7 @@ def detect_delay(
     if state != "OPEN":
         return None
 
-    if "imp:baseline" not in _labels_of(issue):
+    if "nilsson:baseline" not in _labels_of(issue):
         return None
 
     fields = issue.get("fields") or {}
@@ -330,7 +330,7 @@ def main() -> int:
 
     try:
         payload = load_input(args.input)
-    except Exception as exc:  # noqa: BLE001 — surface to Foreman
+    except Exception as exc:  # noqa: BLE001 — surface to Nilsson
         print(str(exc), file=sys.stderr)
         return 1
 

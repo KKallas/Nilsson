@@ -5,12 +5,12 @@ Uses the ``keyring`` library which delegates to:
   - Windows: Windows Credential Manager
   - Linux:   Secret Service (GNOME Keyring / KDE Wallet) via D-Bus
 
-All keys are stored under the service name ``imp``.
+All keys are stored under the service name ``nilsson``.
 """
 
 from __future__ import annotations
 
-SERVICE = "imp"
+SERVICE = "nilsson"
 
 
 def get(name: str) -> str | None:

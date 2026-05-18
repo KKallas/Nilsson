@@ -17,8 +17,8 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 ROOT = Path(__file__).resolve().parent.parent
-INPUT_FILE = ROOT / ".imp" / "enriched.json"
-OUTPUT_DIR = ROOT / ".imp" / "output"
+INPUT_FILE = ROOT / ".nilsson" / "enriched.json"
+OUTPUT_DIR = ROOT / ".nilsson" / "output"
 RENDERERS_DIR = ROOT / "renderers"
 
 

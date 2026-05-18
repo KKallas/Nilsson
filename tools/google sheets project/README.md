@@ -31,7 +31,7 @@ This opens a browser window on first run so you can log in with your Google acco
    - Go to **APIs & Services → Credentials**.
    - Click **+ Create Credentials → OAuth client ID**.
    - Application type: **Desktop app**.
-   - Give it a name (e.g. "Imp Sheets") → **Create**.
+   - Give it a name (e.g. "Nilsson Sheets") → **Create**.
    - A dialog shows your Client ID and Client Secret. Click **Download JSON**.
 6. **Save the file.**
    - Rename the downloaded file to `credentials.json`.
@@ -50,7 +50,7 @@ A service account authenticates without a browser, ideal for automation.
 2. **Create a service account.**
    - Go to **APIs & Services → Credentials**.
    - Click **+ Create Credentials → Service account**.
-   - Give it a name (e.g. "imp-sheets-bot") → **Create and Continue**.
+   - Give it a name (e.g. "nilsson-sheets-bot") → **Create and Continue**.
    - Skip the optional role/permissions steps → **Done**.
 3. **Generate a key.**
    - In the Service Accounts list, click the account you just created.
@@ -60,7 +60,7 @@ A service account authenticates without a browser, ideal for automation.
    - Rename it to `service_account.json`.
    - Move it into this directory (`tools/google sheets project/`).
 5. **Share the spreadsheet with the service account.**
-   - Open the key file and find the `client_email` field (looks like `imp-sheets-bot@your-project.iam.gserviceaccount.com`).
+   - Open the key file and find the `client_email` field (looks like `nilsson-sheets-bot@your-project.iam.gserviceaccount.com`).
    - If connecting to an existing Google Sheet, open that sheet in your browser and click **Share** → paste the `client_email` → give it **Editor** access.
    - If creating a new sheet via `setup_sheet.py`, the service account owns it. To see it in your own Google Drive, share it with your personal email from the script output link.
 
@@ -79,7 +79,7 @@ A service account authenticates without a browser, ideal for automation.
 ### 2. Connect to a Sheet
 
 ```bash
-# Auto-create or find an existing "Imp Project Tracker" sheet
+# Auto-create or find an existing "Nilsson Project Tracker" sheet
 python setup_sheet.py
 
 # Connect to a specific existing spreadsheet by ID

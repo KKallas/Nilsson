@@ -1,6 +1,6 @@
 """server/chat_ws.py — WebSocket handler for the lightweight chat UI.
 
-Receives user messages via WebSocket, calls foreman_agent.dispatch(),
+Receives user messages via WebSocket, calls nilsson_agent.dispatch(),
 and streams tokens + status updates back. Implements TurnUI so the
 structured plan/thinking/streaming flow works over WebSocket.
 """
@@ -15,11 +15,11 @@ from typing import Any
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from server import chat_history
-from server.foreman_agent import (
+from server.nilsson_agent import (
     PlanItem,
     TurnUI,
     _format_tool_sig,
-    dispatch as foreman_dispatch,
+    dispatch as nilsson_dispatch,
 )
 
 
@@ -323,7 +323,7 @@ async def handle_ws_chat(ws: WebSocket) -> None:
 
             async def _run_dispatch() -> None:
                 try:
-                    reply = await foreman_dispatch(
+                    reply = await nilsson_dispatch(
                         text,
                         say=say,
                         ask=ask,

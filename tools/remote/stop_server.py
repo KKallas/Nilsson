@@ -3,7 +3,7 @@
 
 Inputs: None.
 
-Process: Removes the session marker file (.imp/remote_session.json),
+Process: Removes the session marker file (.nilsson/remote_session.json),
 which tells the server that sync access is no longer active.
 Does NOT stop the server itself.
 
@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-SESSION_FILE = Path(".imp/remote_session.json")
+SESSION_FILE = Path(".nilsson/remote_session.json")
 
 
 def main() -> int:

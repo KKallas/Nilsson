@@ -15,7 +15,7 @@ from typing import Any
 from .paths import PROJECT_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
-QUEUE_FILE = PROJECT_DIR / ".imp" / "queue.json"
+QUEUE_FILE = PROJECT_DIR / ".nilsson" / "queue.json"
 
 _items: list[dict[str, Any]] = []
 

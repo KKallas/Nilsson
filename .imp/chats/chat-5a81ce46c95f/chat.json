@@ -1,0 +1,20 @@
+{
+  "id": "chat-5a81ce46c95f",
+  "title": "Check OpenRouter API Key Setup",
+  "title_source": "agent",
+  "created_at": "2026-05-04T21:00:29+00:00",
+  "last_active_at": "2026-05-04T21:00:36+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "can you check the openouter api key is set",
+      "timestamp": "2026-05-04T21:00:30+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "undefined is not an object (evaluating '_.input_tokens')",
+      "timestamp": "2026-05-04T21:00:36+00:00"
+    }
+  ]
+}

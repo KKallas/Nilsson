@@ -8,7 +8,7 @@ patching `project_bootstrap.run_gh` with a scripted fake. Never shells
 out to a real `gh` binary, so the tests work in CI and on a fresh
 checkout with no GitHub auth.
 
-CONFIG_FILE is redirected to a tempdir so the shared `.imp/config.json`
+CONFIG_FILE is redirected to a tempdir so the shared `.nilsson/config.json`
 never gets clobbered.
 """
 
@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "pipeline"))
 
 import project_bootstrap as pb  # noqa: E402
 
-_TMP_DIR = Path(tempfile.mkdtemp(prefix="imp-pb-test-"))
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="nilsson-pb-test-"))
 pb.CONFIG_FILE = _TMP_DIR / "config.json"
 
 
@@ -104,7 +104,7 @@ def test_bootstrap_creates_new_project_and_all_fields() -> None:
     """No existing project → create one and all 7 fields; persist to config."""
     _reset_config()
     empty_list = json.dumps({"projects": []})
-    created_project = json.dumps({"number": 7, "title": "Imp", "url": "https://..."})
+    created_project = json.dumps({"number": 7, "title": "Nilsson", "url": "https://..."})
     empty_fields = json.dumps({"fields": []})
 
     fake = FakeGh(
@@ -124,7 +124,7 @@ def test_bootstrap_creates_new_project_and_all_fields() -> None:
     )
     pb.run_gh = fake
 
-    result = pb.bootstrap_project(owner="KKallas", title="Imp")
+    result = pb.bootstrap_project(owner="KKallas", title="Nilsson")
 
     assert result["project_number"] == 7
     assert result["project_owner"] == "KKallas"
@@ -158,7 +158,7 @@ def test_bootstrap_reuses_existing_project_idempotent() -> None:
     """Existing project with ALL fields → no creation calls, config still written."""
     _reset_config()
     existing_project_list = json.dumps(
-        {"projects": [{"number": 42, "title": "Imp", "url": "..."}]}
+        {"projects": [{"number": 42, "title": "Nilsson", "url": "..."}]}
     )
     all_fields = json.dumps(
         {
@@ -198,7 +198,7 @@ def test_bootstrap_reuses_existing_project_idempotent() -> None:
     )
     pb.run_gh = fake
 
-    result = pb.bootstrap_project(owner="KKallas", title="Imp")
+    result = pb.bootstrap_project(owner="KKallas", title="Nilsson")
 
     assert result["project_number"] == 42
     assert result["project_status"] == "existing"
@@ -226,7 +226,7 @@ def test_bootstrap_partial_existing_fields_creates_only_missing() -> None:
     """Existing project with some fields already → only create the gaps."""
     _reset_config()
     project_list = json.dumps(
-        {"projects": [{"number": 3, "title": "Imp"}]}
+        {"projects": [{"number": 3, "title": "Nilsson"}]}
     )
     half_fields = json.dumps(
         {
@@ -255,7 +255,7 @@ def test_bootstrap_partial_existing_fields_creates_only_missing() -> None:
     )
     pb.run_gh = fake
 
-    result = pb.bootstrap_project(owner="KKallas", title="Imp")
+    result = pb.bootstrap_project(owner="KKallas", title="Nilsson")
 
     assert result["project_number"] == 3
     assert result["project_status"] == "existing"
@@ -275,7 +275,7 @@ def test_bootstrap_aborts_without_writing_config_on_create_failure() -> None:
     fake = FakeGh(
         [
             (["gh", "project", "list"], 0, json.dumps({"projects": []})),
-            (["gh", "project", "create"], 0, json.dumps({"number": 9, "title": "Imp"})),
+            (["gh", "project", "create"], 0, json.dumps({"number": 9, "title": "Nilsson"})),
             (["gh", "project", "field-list"], 0, json.dumps({"fields": []})),
             # First field-create succeeds, second fails
             (["gh", "project", "field-create", None, None, None, None, "duration_days"], 0, "{}"),
@@ -289,7 +289,7 @@ def test_bootstrap_aborts_without_writing_config_on_create_failure() -> None:
     pb.run_gh = fake
 
     try:
-        pb.bootstrap_project(owner="KKallas", title="Imp")
+        pb.bootstrap_project(owner="KKallas", title="Nilsson")
         assert False, "expected RuntimeError on field-create failure"
     except RuntimeError as exc:
         assert "start_date" in str(exc)
@@ -311,14 +311,14 @@ def test_bootstrap_errors_on_non_integer_project_number() -> None:
             (
                 ["gh", "project", "create"],
                 0,
-                json.dumps({"number": "not-an-int", "title": "Imp"}),
+                json.dumps({"number": "not-an-int", "title": "Nilsson"}),
             ),
         ]
     )
     pb.run_gh = fake
 
     try:
-        pb.bootstrap_project(owner="KKallas", title="Imp")
+        pb.bootstrap_project(owner="KKallas", title="Nilsson")
         assert False, "expected RuntimeError on non-integer project number"
     except RuntimeError as exc:
         assert "integer" in str(exc).lower()
@@ -336,7 +336,7 @@ def test_list_fails_surface_gh_error() -> None:
     pb.run_gh = fake
 
     try:
-        pb.bootstrap_project(owner="KKallas", title="Imp")
+        pb.bootstrap_project(owner="KKallas", title="Nilsson")
         assert False, "expected RuntimeError"
     except RuntimeError as exc:
         assert "project list" in str(exc)
@@ -405,7 +405,7 @@ def test_detect_conflict_missing_field_is_not_conflict() -> None:
 def test_bootstrap_on_conflict_stop_raises_and_keeps_config_clean() -> None:
     """Default stop mode: raise ConflictError, don't write config, no field writes."""
     _reset_config()
-    project_list = json.dumps({"projects": [{"number": 5, "title": "Imp"}]})
+    project_list = json.dumps({"projects": [{"number": 5, "title": "Nilsson"}]})
     bad_fields = json.dumps(
         {
             "fields": [
@@ -423,7 +423,7 @@ def test_bootstrap_on_conflict_stop_raises_and_keeps_config_clean() -> None:
     pb.run_gh = fake
 
     try:
-        pb.bootstrap_project(owner="KKallas", title="Imp", on_conflict="stop")
+        pb.bootstrap_project(owner="KKallas", title="Nilsson", on_conflict="stop")
         assert False, "expected ConflictError"
     except pb.ConflictError as exc:
         names = {c["name"] for c in exc.conflicts}
@@ -448,7 +448,7 @@ def test_bootstrap_on_conflict_stop_raises_and_keeps_config_clean() -> None:
 def test_bootstrap_on_conflict_delete_overwrites_and_creates() -> None:
     """delete mode removes the conflicting field then recreates it fresh."""
     _reset_config()
-    project_list = json.dumps({"projects": [{"number": 8, "title": "Imp"}]})
+    project_list = json.dumps({"projects": [{"number": 8, "title": "Nilsson"}]})
     # First list call: existing field has wrong type
     bad_fields = json.dumps(
         {
@@ -526,7 +526,7 @@ def test_bootstrap_on_conflict_delete_overwrites_and_creates() -> None:
     pb.run_gh = fake
 
     result = pb.bootstrap_project(
-        owner="KKallas", title="Imp", on_conflict="delete"
+        owner="KKallas", title="Nilsson", on_conflict="delete"
     )
 
     assert result["deleted_fields"] == ["duration_days"]
@@ -545,7 +545,7 @@ def test_bootstrap_on_conflict_delete_overwrites_and_creates() -> None:
 def test_bootstrap_on_conflict_skip_ignores_and_writes_config() -> None:
     """skip mode: surface conflicts in return dict but proceed; config written."""
     _reset_config()
-    project_list = json.dumps({"projects": [{"number": 11, "title": "Imp"}]})
+    project_list = json.dumps({"projects": [{"number": 11, "title": "Nilsson"}]})
     bad_fields = json.dumps(
         {
             "fields": [
@@ -587,7 +587,7 @@ def test_bootstrap_on_conflict_skip_ignores_and_writes_config() -> None:
     pb.run_gh = fake
 
     result = pb.bootstrap_project(
-        owner="KKallas", title="Imp", on_conflict="skip"
+        owner="KKallas", title="Nilsson", on_conflict="skip"
     )
 
     # Nothing was deleted or created — the wrong-type field stays
@@ -607,13 +607,13 @@ def test_bootstrap_rejects_bad_on_conflict_value() -> None:
     _reset_config()
     fake = FakeGh(
         [
-            (["gh", "project", "list"], 0, json.dumps({"projects": [{"number": 1, "title": "Imp"}]})),
+            (["gh", "project", "list"], 0, json.dumps({"projects": [{"number": 1, "title": "Nilsson"}]})),
             (["gh", "project", "field-list"], 0, json.dumps({"fields": []})),
         ]
     )
     pb.run_gh = fake
     try:
-        pb.bootstrap_project(owner="x", title="Imp", on_conflict="nope")
+        pb.bootstrap_project(owner="x", title="Nilsson", on_conflict="nope")
         assert False, "expected ValueError on bad on_conflict"
     except ValueError as exc:
         assert "on_conflict" in str(exc)

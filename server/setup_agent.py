@@ -1,6 +1,6 @@
 """server/setup_agent.py — LLM-driven first-run onboarding.
 
-Uses the same native-tools pattern as the Foreman agent (Bash, Read,
+Uses the same native-tools pattern as the Nilsson agent (Bash, Read,
 Write). No MCP server. The system prompt tells the agent what commands
 to run (gh, git, python tools/github/create_repo.py, etc.).
 
@@ -23,10 +23,10 @@ try:
 except ImportError:
     PasswordHasher = None  # type: ignore[assignment]
 
-from .paths import IMP_DIR, PROJECT_DIR
+from .paths import NILSSON_DIR, PROJECT_DIR
 
-ROOT = IMP_DIR
-CONFIG_FILE = PROJECT_DIR / ".imp" / "config.json"
+ROOT = NILSSON_DIR
+CONFIG_FILE = PROJECT_DIR / ".nilsson" / "config.json"
 
 
 # ---------- config I/O (intentionally duplicated from main.py) ----------
@@ -60,7 +60,7 @@ def has_llm_access() -> bool:
     Returns True if:
     - ANTHROPIC_API_KEY is set, OR
     - Claude Code CLI is logged in (claude_agent_sdk importable), OR
-    - A custom LLM backend is configured in .imp/config.json with a resolvable key.
+    - A custom LLM backend is configured in .nilsson/config.json with a resolvable key.
     """
     import os
 
@@ -201,8 +201,8 @@ async def do_claude_auth_login() -> dict[str, Any]:
     return {
         "instruction": (
             "The easiest path is to set `ANTHROPIC_API_KEY` in your "
-            "environment before launching Imp (for example in `~/.zshrc`, "
-            "then `source` it and restart `python imp.py`).\n\n"
+            "environment before launching Nilsson (for example in `~/.zshrc`, "
+            "then `source` it and restart `python nilsson.py`).\n\n"
             "Alternatively, run the `claude` CLI in a terminal to sign "
             "in with your Anthropic account — the SDK will reuse that "
             "session."
@@ -270,10 +270,10 @@ async def do_list_projects(owner: str, limit: int = 20) -> dict[str, Any]:
 
 async def do_create_imp_project(
     owner: str,
-    title: str = "Imp",
+    title: str = "Nilsson",
     on_conflict: str = "stop",
 ) -> dict[str, Any]:
-    """Create (or verify) the Imp Projects-v2 board via project_bootstrap.py.
+    """Create (or verify) the Nilsson Projects-v2 board via project_bootstrap.py.
 
     `on_conflict` controls what happens if the script detects fields
     with the correct name but wrong type / options:
@@ -319,7 +319,7 @@ async def do_create_imp_project(
             "next_steps": report.get("next_steps"),
             "project_number": report.get("project_number"),
             "instruction_for_agent": (
-                "Tell the admin there are field conflicts on the Imp board. "
+                "Tell the admin there are field conflicts on the Nilsson board. "
                 "List each conflict's name and reason concisely. Ask them to "
                 "choose: (1) DELETE — overwrite the conflicting fields "
                 "(destructive, any values already stored in those fields "
@@ -369,7 +369,7 @@ async def do_protect_main_branch(repo: str = "") -> dict[str, Any]:
     rc, out = await _run_subprocess(
         [
             "gh", "api", f"repos/{repo}/rulesets", "--method", "POST",
-            "--field", "name=Imp: require PR approval",
+            "--field", "name=Nilsson: require PR approval",
             "--field", "target=branch",
             "--field", "enforcement=active",
             "--field", f'conditions[ref_name][include][]=refs/heads/{branch}',
@@ -464,25 +464,25 @@ async def do_mark_setup_complete() -> dict[str, Any]:
 # ---------- system prompt ----------
 
 def _build_setup_prompt() -> str:
-    imp_dir = str(IMP_DIR)
+    nilsson_dir = str(NILSSON_DIR)
     project_dir = str(PROJECT_DIR)
-    # When Imp is a subfolder, tool paths need the Imp dir prefix
-    if imp_dir != project_dir:
-        tool_prefix = str(IMP_DIR) + "/"
+    # When Nilsson is a subfolder, tool paths need the Nilsson dir prefix
+    if nilsson_dir != project_dir:
+        tool_prefix = str(NILSSON_DIR) + "/"
         dir_note = (
             f"\n\n## Directory layout\n\n"
-            f"Imp is installed as a subfolder of this project.\n"
+            f"Nilsson is installed as a subfolder of this project.\n"
             f"- Project root (CWD): `{project_dir}`\n"
-            f"- Imp code directory: `{imp_dir}`\n\n"
-            f"Git commands, README, and `.imp/` are at the project root. "
-            f"Tool scripts are inside the Imp directory."
+            f"- Nilsson code directory: `{nilsson_dir}`\n\n"
+            f"Git commands, README, and `.nilsson/` are at the project root. "
+            f"Tool scripts are inside the Nilsson directory."
         )
     else:
         tool_prefix = ""
         dir_note = ""
 
     return f"""\
-You are the Setup Agent for Imp — a self-hosted coding agent that manages a \
+You are the Setup Agent for Nilsson — a self-hosted coding agent that manages a \
 GitHub repo. Your job is to walk a fresh admin through first-run setup, one \
 step at a time. You have access to Bash, Read, and Write tools — use them \
 directly. No MCP.
@@ -490,7 +490,7 @@ directly. No MCP.
 
 ## Config file
 
-Imp stores its config at `.imp/config.json`. Use Read/Write to manage it. \
+Nilsson stores its config at `.nilsson/config.json`. Use Read/Write to manage it. \
 Key fields: `repo` (owner/name), `setup_complete` (bool).
 
 ## Setup checklist (in order)
@@ -500,7 +500,7 @@ Key fields: `repo` (owner/name), `setup_complete` (bool).
 `gh auth login --web` in a terminal and come back.
 2. Check if this folder is already a git repo with a GitHub remote.
    - Run `git remote get-url origin`. If it returns a GitHub URL, parse \
-the owner/name, confirm with the admin, and write it to `.imp/config.json`.
+the owner/name, confirm with the admin, and write it to `.nilsson/config.json`.
 3. If no repo found, ask: create a new GitHub repo, or link an existing one?
    - **If creating new:**
      a. Suggest a repo name. First check if there is a README.md — if so, \
@@ -516,15 +516,15 @@ GPL-3.0) and let them pick.
 license.
      f. Run `python3 {tool_prefix}tools/github/create_repo.py --name <name> [--private] \
 [--description "<desc>"]` to git init, create the repo, and push.
-     g. Write the repo owner/name to `.imp/config.json`.
+     g. Write the repo owner/name to `.nilsson/config.json`.
    - **If linking existing:** run `gh repo list --limit 30 --json \
 nameWithOwner,description,visibility` to show options. After admin picks, \
-verify with `gh repo view owner/name` and write to `.imp/config.json`.
+verify with `gh repo view owner/name` and write to `.nilsson/config.json`.
 4. Set up branch protection to require PR approval before merge:
    - Run `gh api repos/OWNER/REPO/rulesets --method POST` with appropriate \
 fields, or guide the admin to Settings > Branches if the API fails.
-5. Set `setup_complete` to `true` in `.imp/config.json` — but only after \
-the `repo` field is set. This hands off to the Foreman agent.
+5. Set `setup_complete` to `true` in `.nilsson/config.json` — but only after \
+the `repo` field is set. This hands off to the Nilsson agent.
 
 ## Rules
 
@@ -532,7 +532,7 @@ the `repo` field is set. This hands off to the Foreman agent.
 report the result plainly.
 - Ask before destructive or write actions. Never assume.
 - If a command fails, explain what went wrong and offer a next step.
-- Stay on topic — you're the Setup Agent, not Foreman.
+- Stay on topic — you're the Setup Agent, not Nilsson.
 - Keep your replies brief. The admin wants to get through setup.
 """
 
@@ -563,12 +563,12 @@ async def run_setup(
     """Drive the setup conversation until `setup_complete=true`.
 
     Uses native Claude SDK tools (Bash, Read, Write) — same pattern as
-    the Foreman agent. No MCP server. The system prompt tells the agent
+    the Nilsson agent. No MCP server. The system prompt tells the agent
     what commands to run. All tools are auto-allowed (no permission prompts).
     """
     await say(
         "Hi — I'm the **Setup Agent**. Let me check what's needed to get "
-        "Imp running.\n\n"
+        "Nilsson running.\n\n"
     )
     print("[setup] greeting sent, initializing SDK...", file=sys.stderr)
 
@@ -585,7 +585,7 @@ async def run_setup(
     from claude_agent_sdk.types import ToolResultBlock
 
     # Honor custom LLM backend config (e.g. Kimi via OpenRouter)
-    from .foreman_agent import _load_llm_config, _llm_sdk_kwargs
+    from .nilsson_agent import _load_llm_config, _llm_sdk_kwargs
 
     llm_cfg = _load_llm_config()
     llm_kwargs = _llm_sdk_kwargs(llm_cfg)
@@ -623,7 +623,7 @@ async def run_setup(
                         if isinstance(block, TextBlock):
                             assistant_text_parts.append(block.text)
                         elif isinstance(block, ToolUseBlock):
-                            from .foreman_agent import _coerce_tool_input
+                            from .nilsson_agent import _coerce_tool_input
                             args = _coerce_tool_input(block.input)
                             desc = args.get("description", block.name)
                             pending_tools[block.id] = (block.name, time.time())

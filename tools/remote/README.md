@@ -1,13 +1,13 @@
 # remote
 
-Remote access tools — sync files between the Imp server and developer machines.
+Remote access tools — sync files between the Nilsson server and developer machines.
 
 ## Tools
 
 | Script | Purpose |
 |--------|---------|
-| `start_server.py` | Start the Imp server (checks if already running) |
-| `stop_server.py` | Stop the Imp server (SIGTERM, falls back to SIGKILL) |
+| `start_server.py` | Start the Nilsson server (checks if already running) |
+| `stop_server.py` | Stop the Nilsson server (SIGTERM, falls back to SIGKILL) |
 
 ## Usage
 
@@ -17,8 +17,8 @@ Remote access tools — sync files between the Imp server and developer machines
 2. On your local machine, download and run the sync script:
 
 ```bash
-curl -o imp-sync.py http://<server-ip>:8421/imp-sync.py
-python imp-sync.py
+curl -o nilsson-sync.py http://<server-ip>:8421/nilsson-sync.py
+python nilsson-sync.py
 ```
 
 3. Edit files on either side — changes sync automatically every 2 seconds

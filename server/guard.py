@@ -1,6 +1,6 @@
 """server/guard.py — the real Guard Agent (no tools, two checkpoints).
 
-The Guard Agent is the security spine of Imp. It's a **separate Claude
+The Guard Agent is the security spine of Nilsson. It's a **separate Claude
 session with no tools** — it cannot touch GitHub, cannot edit files,
 cannot shell out. It can only read a bit of text and emit a structured
 `{"verdict": "approve" | "reject", "reason": "..."}` verdict.
@@ -143,7 +143,7 @@ DISALLOWED_TOOLS: tuple[str, ...] = (
 # ---------- system prompts ----------
 
 CHECKPOINT_A_SYSTEM_PROMPT = """\
-You are the Guard Agent for Imp, a self-hosted coding agent that manages a GitHub repo.
+You are the Guard Agent for Nilsson, a self-hosted coding agent that manages a GitHub repo.
 
 Your job at this checkpoint is to screen an INBOUND USER MESSAGE before it
 reaches the worker agent. You have NO tools. You can only emit a verdict.
@@ -180,7 +180,7 @@ on reject so the admin can see why the turn was blocked.
 
 
 CHECKPOINT_B_SYSTEM_PROMPT = """\
-You are the Guard Agent for Imp, a self-hosted coding agent that manages a GitHub repo.
+You are the Guard Agent for Nilsson, a self-hosted coding agent that manages a GitHub repo.
 
 Your job at this checkpoint is to review a PROPOSED WRITE ACTION from the
 worker agent before it executes against GitHub. You have NO tools. You can

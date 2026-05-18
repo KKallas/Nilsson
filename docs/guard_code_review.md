@@ -1,7 +1,7 @@
 # Guard Agent — Code Review Checklist
 
 This file is the source of truth for how the Guard Agent (`server/guard.py`)
-reviews **arbitrary code** that Foreman proposes to run via `python -c`,
+reviews **arbitrary code** that Nilsson proposes to run via `python -c`,
 `python3 -c`, `bash -c`, or `sh -c`. Loaded once at module import and
 embedded into the checkpoint-B system prompt — restart the server to pick
 up edits.
@@ -53,7 +53,7 @@ Reject any outbound network call:
   `ftp`/`sftp`, `nmap`, `dig`/`nslookup`/`host`
 - DNS lookups via `socket.gethostbyname` etc.
 
-Imp's pipelines reach GitHub via the `gh` CLI which IS allowed (it's
+Nilsson's pipelines reach GitHub via the `gh` CLI which IS allowed (it's
 classified separately and has its own auth). Direct GitHub API calls from
 arbitrary code are NOT — they bypass the gh classification path.
 
@@ -82,18 +82,18 @@ Reject:
   (deserialization is arbitrary code execution)
 - `base64`/`hex`/`zlib` decode of a literal followed by `exec`/`eval`/etc.
 
-### 1.5 Destructive filesystem ops outside `.imp/`
+### 1.5 Destructive filesystem ops outside `.nilsson/`
 
 Reject:
 
 - `shutil.rmtree`, `os.unlink`, `os.remove`, `os.rmdir`, `pathlib.Path.unlink`
-  on any path NOT under `.imp/`
-- `os.replace`, `os.rename`, `shutil.move` to/from outside `.imp/`
-- Shell `rm -rf` / `rm -r` on any path NOT under `.imp/`
+  on any path NOT under `.nilsson/`
+- `os.replace`, `os.rename`, `shutil.move` to/from outside `.nilsson/`
+- Shell `rm -rf` / `rm -r` on any path NOT under `.nilsson/`
 - `>` redirection to system files (`/etc/`, `/usr/`, `/bin/`, `/sbin/`,
-  `/var/`, `/opt/`, `~/Library/`, `~/.config/` outside `.imp/`)
+  `/var/`, `/opt/`, `~/Library/`, `~/.config/` outside `.nilsson/`)
 - `truncate`, `> /dev/null` on real files (the latter is fine in pipes)
-- `chmod -R` outside `.imp/`, `chown` (any), `setfacl`
+- `chmod -R` outside `.nilsson/`, `chown` (any), `setfacl`
 
 ### 1.6 System config / privileged tooling
 
@@ -115,15 +115,15 @@ For each proposed code action, Guard asks:
 
 1. **Does the code's apparent purpose match the user's intent for this
    turn?** If the admin asked "moderate issue 42" and the code is
-   reading `.imp/issues.json`, that's plausibly on-task. If the code
+   reading `.nilsson/issues.json`, that's plausibly on-task. If the code
    touches issue 99 or PR 17, it's drifted.
 
 2. **Does it touch issues / PRs / files the admin didn't mention?**
-   Bias toward reject when in doubt — Foreman can revise with a
+   Bias toward reject when in doubt — Nilsson can revise with a
    narrower scope.
 
 3. **Is the side effect proportional to the request?** Reading data is
-   cheap; writing files in `.imp/output/` is fine; writing files at the
+   cheap; writing files in `.nilsson/output/` is fine; writing files at the
    repo root or under `99-tools/` is suspicious unless the admin
    explicitly asked.
 
@@ -159,8 +159,8 @@ is whether the code's intent is HIDDEN from a human reader.
 These patterns appear all the time and are typically benign — Guard
 shouldn't flag them unless something else trips:
 
-- Reading `.imp/*.json` (sync / heuristics output)
-- Writing under `.imp/output/*` or `.imp/sandbox/*`
+- Reading `.nilsson/*.json` (sync / heuristics output)
+- Writing under `.nilsson/output/*` or `.nilsson/sandbox/*`
 - Standard library reads: `json`, `re`, `datetime`, `pathlib`,
   `collections`, `dataclasses`, `itertools`, `functools`
 - Computation: `statistics`, `math`, `decimal`, `fractions`
@@ -168,7 +168,7 @@ shouldn't flag them unless something else trips:
 - Iteration helpers: `enumerate`, `zip`, `sorted`, `filter`, `map`
 - `print()` / writing to stdout/stderr (subprocess output is captured
   by `intercept.py` and shown to the admin anyway)
-- `pathlib.Path.read_text()` / `write_text()` confined to `.imp/`
+- `pathlib.Path.read_text()` / `write_text()` confined to `.nilsson/`
 
 If 100% of the code is in this list and the scope-check passes, approve
 without further analysis.

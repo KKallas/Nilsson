@@ -1,0 +1,57 @@
+# nilsson
+
+Local tools for managing the Nilsson project workspace.
+
+## Tools
+
+| Script | Purpose | Key Arguments |
+|---|---|---|
+| `clean_chats.py` | Delete chat history and execution logs | `--include-logs`, `--dry-run` |
+| `list_tools.py` | List all available tool scripts | `--group`, `--verbose` |
+| `make_tool.py` | Create GitHub issue + PR for a new tool | `--group`, `--name`, `--title` |
+| `make_workflow.py` | Create GitHub issue + PR for a new workflow | `--name`, `--title` |
+| `sync_upstream.py` | Pull latest Nilsson core updates into this project | `--dry-run`, `--repo` |
+| `push_fix.py` | Push a bug fix back to the upstream Nilsson repo as a PR | `--files`, `--message`, `--repo` |
+
+## Usage
+
+```bash
+# Preview what would be deleted
+python tools/nilsson/clean_chats.py --dry-run
+
+# Delete all chat history
+python tools/nilsson/clean_chats.py
+
+# Delete chat history AND execution logs
+python tools/nilsson/clean_chats.py --include-logs
+
+# Delete everything, preview first
+python tools/nilsson/clean_chats.py --include-logs --dry-run
+
+# List all tools
+python tools/nilsson/list_tools.py
+
+# List tools in a specific group
+python tools/nilsson/list_tools.py --group github
+
+# List all tools with descriptions
+python tools/nilsson/list_tools.py --verbose
+
+# Create a tool (after writing the .py file)
+python tools/nilsson/make_tool.py --group github --name my_tool --title "Add my_tool"
+
+# Create a workflow (after writing step files)
+python tools/nilsson/make_workflow.py --name daily_report --title "Add daily report workflow"
+
+# Check what Nilsson updates are available (no changes applied)
+python tools/nilsson/sync_upstream.py --dry-run
+
+# Pull latest Nilsson core updates
+python tools/nilsson/sync_upstream.py
+
+# Push a bug fix back to the Nilsson repo
+python tools/nilsson/push_fix.py --files server/render_route.py --message "Fix WebSocket reconnect"
+
+# Push multiple files
+python tools/nilsson/push_fix.py --files server/render_route.py --files server/chat_ws.py --message "Fix chat reconnect"
+```

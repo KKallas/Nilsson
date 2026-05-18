@@ -1,0 +1,43 @@
+{
+  "id": "chat-faf0528f7b28",
+  "title": "New chat",
+  "title_source": "fallback",
+  "created_at": "2026-05-04T18:51:30+00:00",
+  "last_active_at": "2026-05-04T18:51:53+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "can you try out some thinking so I can test the gui parts",
+      "timestamp": "2026-05-04T18:51:33+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Sure! Let me do a few things that should exercise the thinking/reasoning display in your GUI.\n\nHere's a thought process walkthrough:\n\n**Step 1:** I'm considering what \"GUI parts\" you might want to test \u2014 likely the thinking/reasoning blocks that show up in the chat interface.\n\n**Step 2:** Let me also throw in a few other renderable elements so you can check those too:\n\n### A Mermaid diagram\n\n```mermaid\ngraph TD\n    A[User sends message] --> B{Thinking needed?}\n    B -->|Yes| C[Show thinking block]\n    B -->|No| D[Direct response]\n    C --> E[Show final response]\n    D --> E\n```\n\n### A code block\n\n```python\n# Just testing syntax highlighting\ndef greet(name: str) -> str:\n    return f\"Hello, {name}!\"\n```\n\n### A table\n\n| Element | Status |\n|---------|--------|\n| Thinking blocks | \u2705 Testing now |\n| Mermaid diagrams | \u2705 Above |\n| Code blocks | \u2705 Above |\n| Inline `code` | \u2705 This line |\n| **Bold** / *italic* | \u2705 This line |\n\n---\n\nThat should give you thinking blocks + several rendered elements to poke at. Let me know if you want me to push something to the dashboard panel too, or if there's a specific GUI component you want to stress-test!",
+      "timestamp": "2026-05-04T18:51:53+00:00",
+      "thinking": [
+        "The user wants me to \"try out some thinking\" so they can test GUI parts. They want to see how the thinking/reasoning blocks appear in their chat UI. Let me do some visible thinking and give a response that exercises the GUI rendering.\n\nLet me think about what would be useful to show - maybe I can do a few different things that would test various GUI elements like thinking blocks, mermaid diagrams, code blocks, etc."
+      ],
+      "blocks": [
+        {
+          "type": "thinking",
+          "text": "The user wants me to \"try out some thinking\" so they can test GUI parts. They want to see how the thinking/reasoning blocks appear in their chat UI. Let me do some visible thinking and give a response that exercises the GUI rendering.\n\nLet me think about what would be useful to show - maybe I can do a few different things that would test various GUI elements like thinking blocks, mermaid diagrams, code blocks, etc."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "(stopped)",
+      "timestamp": "2026-05-04T18:51:53+00:00",
+      "thinking": [
+        "The user wants me to \"try out some thinking\" so they can test GUI parts. They want to see how the thinking/reasoning blocks appear in their chat UI. Let me do some visible thinking and give a response that exercises the GUI rendering.\n\nLet me think about what would be useful to show - maybe I can do a few different things that would test various GUI elements like thinking blocks, mermaid diagrams, code blocks, etc."
+      ],
+      "blocks": [
+        {
+          "type": "thinking",
+          "text": "The user wants me to \"try out some thinking\" so they can test GUI parts. They want to see how the thinking/reasoning blocks appear in their chat UI. Let me do some visible thinking and give a response that exercises the GUI rendering.\n\nLet me think about what would be useful to show - maybe I can do a few different things that would test various GUI elements like thinking blocks, mermaid diagrams, code blocks, etc."
+        }
+      ]
+    }
+  ]
+}

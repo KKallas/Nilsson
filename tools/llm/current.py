@@ -4,7 +4,7 @@
 Inputs:
   (none)
 
-Process: Reads the `llm` block from `.imp/config.json` and prints the
+Process: Reads the `llm` block from `.nilsson/config.json` and prints the
          active model, base URL, and API key environment variable.
 Output: Prints the current LLM backend settings, or 'default (Anthropic)'
         if no custom backend is configured."""
@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
-CONFIG_FILE = PROJECT_DIR / ".imp" / "config.json"
+CONFIG_FILE = PROJECT_DIR / ".nilsson" / "config.json"
 
 
 def main() -> int:
@@ -22,7 +22,7 @@ def main() -> int:
         try:
             cfg = json.loads(CONFIG_FILE.read_text())
         except json.JSONDecodeError:
-            print("Error: could not parse .imp/config.json", file=sys.stderr)
+            print("Error: could not parse .nilsson/config.json", file=sys.stderr)
             return 1
 
     llm = cfg.get("llm")

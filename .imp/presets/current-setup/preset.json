@@ -1,0 +1,25 @@
+{
+  "name": "current-setup",
+  "description": "",
+  "workflows": [
+    "dev_sync",
+    "weekly_triage"
+  ],
+  "tool_groups": [
+    "github",
+    "google sheets project",
+    "imp",
+    "remote",
+    "render"
+  ],
+  "active_tools": [
+    "imp",
+    "presets",
+    "remote",
+    "render",
+    "github"
+  ],
+  "active_workflows": [
+    "dev_sync"
+  ]
+}

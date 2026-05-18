@@ -1,0 +1,159 @@
+{
+  "ran_at": "2026-04-15T10:44:39.538447+00:00",
+  "baseline_hash": "sha256:a690ad266aebdbe5",
+  "scenarios": [
+    {
+      "name": "as-is",
+      "charts": [
+        {
+          "data": [
+            {
+              "type": "bar",
+              "orientation": "h",
+              "x": [],
+              "y": [],
+              "base": [],
+              "marker": {
+                "color": []
+              }
+            }
+          ],
+          "layout": {
+            "title": {
+              "text": "As-Is (baseline)"
+            },
+            "xaxis": {
+              "type": "date"
+            },
+            "yaxis": {
+              "automargin": true,
+              "autorange": "reversed"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        [
+          "duration",
+          "unknown"
+        ],
+        [
+          "finish date",
+          "unknown"
+        ]
+      ],
+      "lists": [
+        [
+          "blockers",
+          [
+            "none"
+          ]
+        ]
+      ],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "start 2 weeks from now",
+      "charts": [
+        {
+          "data": [
+            {
+              "type": "bar",
+              "orientation": "h",
+              "x": [],
+              "y": [],
+              "base": [],
+              "marker": {
+                "color": []
+              }
+            }
+          ],
+          "layout": {
+            "title": {
+              "text": "Start shifted to 2026-04-29"
+            },
+            "xaxis": {
+              "type": "date"
+            },
+            "yaxis": {
+              "automargin": true,
+              "autorange": "reversed"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        [
+          "duration",
+          "unknown"
+        ],
+        [
+          "finish date",
+          "unknown"
+        ]
+      ],
+      "lists": [
+        [
+          "blockers",
+          [
+            "none"
+          ]
+        ]
+      ],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "4 devs not 2",
+      "charts": [
+        {
+          "data": [
+            {
+              "type": "bar",
+              "orientation": "h",
+              "x": [],
+              "y": [],
+              "base": [],
+              "marker": {
+                "color": []
+              }
+            }
+          ],
+          "layout": {
+            "title": {
+              "text": "4 devs (durations \u00d7 0.5)"
+            },
+            "xaxis": {
+              "type": "date"
+            },
+            "yaxis": {
+              "automargin": true,
+              "autorange": "reversed"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        [
+          "duration",
+          "unknown"
+        ],
+        [
+          "finish date",
+          "unknown"
+        ]
+      ],
+      "lists": [
+        [
+          "blockers",
+          [
+            "none"
+          ]
+        ]
+      ],
+      "texts": [],
+      "tables": []
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "chat-8503d214e606",
+  "title": "PR: start point test",
+  "title_source": "agent",
+  "created_at": "2026-05-04T05:27:57+00:00",
+  "last_active_at": "2026-05-04T05:27:57+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "**1 file(s) loaded:**\n\n<details class=\"imp-fold ok\"><summary>\ud83d\udcc4 .imp/chats/chat-69e7222db08e/chat.json (20 lines)</summary><pre class=\"imp-code\"><span class=\"line\">{</span><span class=\"line\">  \"id\": \"chat-69e7222db08e\",</span><span class=\"line\">  \"title\": \"New chat\",</span><span class=\"line\">  \"title_source\": \"fallback\",</span><span class=\"line\">  \"created_at\": \"2026-05-04T05:27:15+00:00\",</span><span class=\"line\">  \"last_active_at\": \"2026-05-04T05:27:15+00:00\",</span><span class=\"line\">  \"repo\": null,</span><span class=\"line\">  \"turns\": [],</span><span class=\"line\">  \"branch\": \"imp/chat-69e7222db08e\",</span><span class=\"line\">  \"snapshots\": [</span><span class=\"line\">    {</span><span class=\"line\">      \"name\": \"start point test\",</span><span class=\"line\">      \"commit_hash\": \"7c852349fe957360698d046fcfb733d23a1e32e4\",</span><span class=\"line\">      \"timestamp\": \"2026-05-04T05:27:29+00:00\",</span><span class=\"line\">      \"changed_files\": [</span><span class=\"line\">        \"README.md\"</span><span class=\"line\">      ]</span><span class=\"line\">    }</span><span class=\"line\">  ]</span><span class=\"line\">}</span></pre></details>",
+      "timestamp": "2026-05-04T05:27:57+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "I have 1 file(s) loaded: `.imp/chats/chat-69e7222db08e/chat.json`.\n\nType your instructions and I'll edit the files. You can see the changes in the Tools or Workflows tab when done.",
+      "timestamp": "2026-05-04T05:27:57+00:00"
+    }
+  ]
+}

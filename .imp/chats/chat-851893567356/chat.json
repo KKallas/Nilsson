@@ -1,0 +1,225 @@
+{
+  "id": "chat-851893567356",
+  "title": "New chat",
+  "title_source": "fallback",
+  "created_at": "2026-05-08T18:20:21+00:00",
+  "last_active_at": "2026-05-08T20:17:05+00:00",
+  "repo": null,
+  "turns": [
+    {
+      "role": "user",
+      "content": "can you delete all other conversation history that is older than \nFive Day Burndown Chart Request\n5 May, 01:07",
+      "timestamp": "2026-05-08T18:21:00+00:00"
+    },
+    {
+      "role": "assistant",
+      "content": "Let me first check what the `clean_chats` tool can do and see the current chat history.The `clean_chats` tool deletes *all* chats, but you want to selectively delete only those **older than May 5**. Let me look at the chat files to identify which ones to remove.",
+      "timestamp": "2026-05-08T20:17:04+00:00",
+      "tool_calls": [
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --help 2>&1",
+            "description": "Check clean_chats tool usage"
+          },
+          "status": "ok",
+          "duration_s": 1.0202907499988214,
+          "output": "usage: clean_chats.py [-h] [--include-logs] [--dry-run]\n\nClean up Imp chat history and logs\n\noptions:\n  -h, --help      show this help message and exit\n  --include-logs  Also delete execution logs in public/logs/\n  --dry-run       Show what would be deleted without actually deleting"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "ls -lt ~/.claude/projects/-Users-kasparkallas-Documents-GitHub-Imp/chats/ 2>/dev/null || echo \"No chats dir found\"; ls -lt ~/.claude/chats/ 2>/dev/null | head -30 || echo \"No global chats dir\"",
+            "description": "List chat history files"
+          },
+          "status": "ok",
+          "duration_s": 0.03503912499945727,
+          "output": "No chats dir found"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --dry-run 2>&1",
+            "description": "Dry run to see what clean_chats would delete"
+          },
+          "status": "ok",
+          "duration_s": 0.05352804100039066,
+          "output": "  would delete: .imp/chats/chat-0ee4e1e355a9\n  would delete: .imp/chats/chat-145a0e9a23dc\n  would delete: .imp/chats/chat-5a81ce46c95f\n  would delete: .imp/chats/chat-686167544d5f\n  would delete: .imp/chats/chat-69e7222db08e\n  would delete: .imp/chats/chat-798160c8a876\n  would delete: .imp/chats/chat-7fc6263c81ca\n  would delete: .imp/chats/chat-8503d214e606\n  would delete: .imp/chats/chat-851893567356\n  would delete: .imp/chats/chat-8695cac58e65\n  would delete: .imp/chats/chat-8993631ef219\n  would delete: .imp/chats/chat-995d67b438bf\n  would delete: .imp/chats/chat-a027520a69b9\n  would delete: .imp/chats/chat-a358d6d38856\n  would delete: .imp/chats/chat-a47f97f4e8c2\n  would delete: .imp/chats/chat-b73c30dde219\n  would delete: .imp/chats/chat-b9bd9a1c02d0\n  would delete: .imp/chats/chat-cc5764033984\n  would delete: .imp/chats/chat-df454970203b\n  would delete: .imp/chats/chat-e1ac18cca9fc\n  would delete: .imp/chats/chat-ebdfb1938d4b\n  would delete: .imp/chats/chat-faf0528f7b28\n  would delete: .imp/chats/chat-fd0269920afa\nchats: would delete 23 item(s)\n\nWould delete 23 item(s) total."
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "for f in .imp/chats/chat-*/chat.json; do\n  ts=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('created','') or d.get('timestamp','') or d.get('started','') or 'unknown')\" 2>/dev/null || echo \"parse-error\")\n  title=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('title','(no title)')[:60])\" 2>/dev/null || echo \"parse-error\")\n  echo \"$ts | $title | $f\"\ndone | sort",
+            "description": "List all chats with timestamps and titles"
+          },
+          "status": "ok",
+          "duration_s": 3.992659667001135,
+          "output": "unknown | 10-Day Burndown Chart Creation | .imp/chats/chat-b73c30dde219/chat.json\nunknown | 10-Day Issue Burndown Chart | .imp/chats/chat-e1ac18cca9fc/chat.json\nunknown | 12-Day Burndown Chart Creation | .imp/chats/chat-995d67b438bf/chat.json\nunknown | 7-Day Burndown Chart Request | .imp/chats/chat-ebdfb1938d4b/chat.json\nunknown | Check OpenOuter API Key Setup | .imp/chats/chat-8993631ef219/chat.json\nunknown | Check OpenRouter API Key Setup | .imp/chats/chat-5a81ce46c95f/chat.json\nunknown | Clear all chat history | .imp/chats/chat-145a0e9a23dc/chat.json\nunknown | Create test_tool8 message parameter | .imp/chats/chat-8695cac58e65/chat.json\nunknown | Five Day Burndown Chart Request | .imp/chats/chat-cc5764033984/chat.json\nunknown | Five day burndown chart creation | .imp/chats/chat-686167544d5f/chat.json\nunknown | Imp Applet Factory Distribution Model | .imp/chats/chat-fd0269920afa/chat.json\nunknown | Link to GitHub issues page | .imp/chats/chat-a47f97f4e8c2/chat.json\nunknown | Listing root folder files | .imp/chats/chat-798160c8a876/chat.json\nunknown | Listing root folder files | .imp/chats/chat-b9bd9a1c02d0/chat.json\nunknown | New chat | .imp/chats/chat-69e7222db08e/chat.json\nunknown | New chat | .imp/chats/chat-7fc6263c81ca/chat.json\nunknown | New chat | .imp/chats/chat-851893567356/chat.json\nunknown | New chat | .imp/chats/chat-df454970203b/chat.json\nunknown | New chat | .imp/chats/chat-faf0528f7b28/chat.json\nunknown | PR: start point test | .imp/chats/chat-8503d214e606/chat.json\nunknown | Switch LLM to Kimi K2 | .imp/chats/chat-0ee4e1e355a9/chat.json\nunknown | Test tool PR and removal | .imp/chats/chat-a027520a69b9/chat.json\nunknown | Weekly issues burndown chart | .imp/chats/chat-a358d6d38856/chat.json"
+        }
+      ],
+      "thinking": [
+        "The user wants to delete conversation history (chats) that are older than the \"Five Day Burndown Chart Request\" from May 5, 01:07. Let me first check what tool is available for this - I see `clean_chats` in the imp tools. Let me first list the chats to see what's there, then use the clean tool.\n\nLet me first check what the clean_chats tool does.",
+        "The `clean_chats` tool deletes ALL chats. The user wants to selectively delete only chats older than a specific one. Let me look at the chat files to understand their format and find which ones are older than May 5."
+      ],
+      "blocks": [
+        {
+          "type": "thinking",
+          "text": "The user wants to delete conversation history (chats) that are older than the \"Five Day Burndown Chart Request\" from May 5, 01:07. Let me first check what tool is available for this - I see `clean_chats` in the imp tools. Let me first list the chats to see what's there, then use the clean tool.\n\nLet me first check what the clean_chats tool does."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --help 2>&1",
+            "description": "Check clean_chats tool usage"
+          },
+          "status": "ok",
+          "duration_s": 1.0202907499988214,
+          "output": "usage: clean_chats.py [-h] [--include-logs] [--dry-run]\n\nClean up Imp chat history and logs\n\noptions:\n  -h, --help      show this help message and exit\n  --include-logs  Also delete execution logs in public/logs/\n  --dry-run       Show what would be deleted without actually deleting"
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "ls -lt ~/.claude/projects/-Users-kasparkallas-Documents-GitHub-Imp/chats/ 2>/dev/null || echo \"No chats dir found\"; ls -lt ~/.claude/chats/ 2>/dev/null | head -30 || echo \"No global chats dir\"",
+            "description": "List chat history files"
+          },
+          "status": "ok",
+          "duration_s": 0.03503912499945727,
+          "output": "No chats dir found"
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --dry-run 2>&1",
+            "description": "Dry run to see what clean_chats would delete"
+          },
+          "status": "ok",
+          "duration_s": 0.05352804100039066,
+          "output": "  would delete: .imp/chats/chat-0ee4e1e355a9\n  would delete: .imp/chats/chat-145a0e9a23dc\n  would delete: .imp/chats/chat-5a81ce46c95f\n  would delete: .imp/chats/chat-686167544d5f\n  would delete: .imp/chats/chat-69e7222db08e\n  would delete: .imp/chats/chat-798160c8a876\n  would delete: .imp/chats/chat-7fc6263c81ca\n  would delete: .imp/chats/chat-8503d214e606\n  would delete: .imp/chats/chat-851893567356\n  would delete: .imp/chats/chat-8695cac58e65\n  would delete: .imp/chats/chat-8993631ef219\n  would delete: .imp/chats/chat-995d67b438bf\n  would delete: .imp/chats/chat-a027520a69b9\n  would delete: .imp/chats/chat-a358d6d38856\n  would delete: .imp/chats/chat-a47f97f4e8c2\n  would delete: .imp/chats/chat-b73c30dde219\n  would delete: .imp/chats/chat-b9bd9a1c02d0\n  would delete: .imp/chats/chat-cc5764033984\n  would delete: .imp/chats/chat-df454970203b\n  would delete: .imp/chats/chat-e1ac18cca9fc\n  would delete: .imp/chats/chat-ebdfb1938d4b\n  would delete: .imp/chats/chat-faf0528f7b28\n  would delete: .imp/chats/chat-fd0269920afa\nchats: would delete 23 item(s)\n\nWould delete 23 item(s) total."
+        },
+        {
+          "type": "thinking",
+          "text": "The `clean_chats` tool deletes ALL chats. The user wants to selectively delete only chats older than a specific one. Let me look at the chat files to understand their format and find which ones are older than May 5."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "for f in .imp/chats/chat-*/chat.json; do\n  ts=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('created','') or d.get('timestamp','') or d.get('started','') or 'unknown')\" 2>/dev/null || echo \"parse-error\")\n  title=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('title','(no title)')[:60])\" 2>/dev/null || echo \"parse-error\")\n  echo \"$ts | $title | $f\"\ndone | sort",
+            "description": "List all chats with timestamps and titles"
+          },
+          "status": "ok",
+          "duration_s": 3.992659667001135,
+          "output": "unknown | 10-Day Burndown Chart Creation | .imp/chats/chat-b73c30dde219/chat.json\nunknown | 10-Day Issue Burndown Chart | .imp/chats/chat-e1ac18cca9fc/chat.json\nunknown | 12-Day Burndown Chart Creation | .imp/chats/chat-995d67b438bf/chat.json\nunknown | 7-Day Burndown Chart Request | .imp/chats/chat-ebdfb1938d4b/chat.json\nunknown | Check OpenOuter API Key Setup | .imp/chats/chat-8993631ef219/chat.json\nunknown | Check OpenRouter API Key Setup | .imp/chats/chat-5a81ce46c95f/chat.json\nunknown | Clear all chat history | .imp/chats/chat-145a0e9a23dc/chat.json\nunknown | Create test_tool8 message parameter | .imp/chats/chat-8695cac58e65/chat.json\nunknown | Five Day Burndown Chart Request | .imp/chats/chat-cc5764033984/chat.json\nunknown | Five day burndown chart creation | .imp/chats/chat-686167544d5f/chat.json\nunknown | Imp Applet Factory Distribution Model | .imp/chats/chat-fd0269920afa/chat.json\nunknown | Link to GitHub issues page | .imp/chats/chat-a47f97f4e8c2/chat.json\nunknown | Listing root folder files | .imp/chats/chat-798160c8a876/chat.json\nunknown | Listing root folder files | .imp/chats/chat-b9bd9a1c02d0/chat.json\nunknown | New chat | .imp/chats/chat-69e7222db08e/chat.json\nunknown | New chat | .imp/chats/chat-7fc6263c81ca/chat.json\nunknown | New chat | .imp/chats/chat-851893567356/chat.json\nunknown | New chat | .imp/chats/chat-df454970203b/chat.json\nunknown | New chat | .imp/chats/chat-faf0528f7b28/chat.json\nunknown | PR: start point test | .imp/chats/chat-8503d214e606/chat.json\nunknown | Switch LLM to Kimi K2 | .imp/chats/chat-0ee4e1e355a9/chat.json\nunknown | Test tool PR and removal | .imp/chats/chat-a027520a69b9/chat.json\nunknown | Weekly issues burndown chart | .imp/chats/chat-a358d6d38856/chat.json"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "(stopped)",
+      "timestamp": "2026-05-08T20:17:05+00:00",
+      "tool_calls": [
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --help 2>&1",
+            "description": "Check clean_chats tool usage"
+          },
+          "status": "ok",
+          "duration_s": 1.0202907499988214,
+          "output": "usage: clean_chats.py [-h] [--include-logs] [--dry-run]\n\nClean up Imp chat history and logs\n\noptions:\n  -h, --help      show this help message and exit\n  --include-logs  Also delete execution logs in public/logs/\n  --dry-run       Show what would be deleted without actually deleting"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "ls -lt ~/.claude/projects/-Users-kasparkallas-Documents-GitHub-Imp/chats/ 2>/dev/null || echo \"No chats dir found\"; ls -lt ~/.claude/chats/ 2>/dev/null | head -30 || echo \"No global chats dir\"",
+            "description": "List chat history files"
+          },
+          "status": "ok",
+          "duration_s": 0.03503912499945727,
+          "output": "No chats dir found"
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --dry-run 2>&1",
+            "description": "Dry run to see what clean_chats would delete"
+          },
+          "status": "ok",
+          "duration_s": 0.05352804100039066,
+          "output": "  would delete: .imp/chats/chat-0ee4e1e355a9\n  would delete: .imp/chats/chat-145a0e9a23dc\n  would delete: .imp/chats/chat-5a81ce46c95f\n  would delete: .imp/chats/chat-686167544d5f\n  would delete: .imp/chats/chat-69e7222db08e\n  would delete: .imp/chats/chat-798160c8a876\n  would delete: .imp/chats/chat-7fc6263c81ca\n  would delete: .imp/chats/chat-8503d214e606\n  would delete: .imp/chats/chat-851893567356\n  would delete: .imp/chats/chat-8695cac58e65\n  would delete: .imp/chats/chat-8993631ef219\n  would delete: .imp/chats/chat-995d67b438bf\n  would delete: .imp/chats/chat-a027520a69b9\n  would delete: .imp/chats/chat-a358d6d38856\n  would delete: .imp/chats/chat-a47f97f4e8c2\n  would delete: .imp/chats/chat-b73c30dde219\n  would delete: .imp/chats/chat-b9bd9a1c02d0\n  would delete: .imp/chats/chat-cc5764033984\n  would delete: .imp/chats/chat-df454970203b\n  would delete: .imp/chats/chat-e1ac18cca9fc\n  would delete: .imp/chats/chat-ebdfb1938d4b\n  would delete: .imp/chats/chat-faf0528f7b28\n  would delete: .imp/chats/chat-fd0269920afa\nchats: would delete 23 item(s)\n\nWould delete 23 item(s) total."
+        },
+        {
+          "name": "Bash",
+          "args": {
+            "command": "for f in .imp/chats/chat-*/chat.json; do\n  ts=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('created','') or d.get('timestamp','') or d.get('started','') or 'unknown')\" 2>/dev/null || echo \"parse-error\")\n  title=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('title','(no title)')[:60])\" 2>/dev/null || echo \"parse-error\")\n  echo \"$ts | $title | $f\"\ndone | sort",
+            "description": "List all chats with timestamps and titles"
+          },
+          "status": "ok",
+          "duration_s": 3.992659667001135,
+          "output": "unknown | 10-Day Burndown Chart Creation | .imp/chats/chat-b73c30dde219/chat.json\nunknown | 10-Day Issue Burndown Chart | .imp/chats/chat-e1ac18cca9fc/chat.json\nunknown | 12-Day Burndown Chart Creation | .imp/chats/chat-995d67b438bf/chat.json\nunknown | 7-Day Burndown Chart Request | .imp/chats/chat-ebdfb1938d4b/chat.json\nunknown | Check OpenOuter API Key Setup | .imp/chats/chat-8993631ef219/chat.json\nunknown | Check OpenRouter API Key Setup | .imp/chats/chat-5a81ce46c95f/chat.json\nunknown | Clear all chat history | .imp/chats/chat-145a0e9a23dc/chat.json\nunknown | Create test_tool8 message parameter | .imp/chats/chat-8695cac58e65/chat.json\nunknown | Five Day Burndown Chart Request | .imp/chats/chat-cc5764033984/chat.json\nunknown | Five day burndown chart creation | .imp/chats/chat-686167544d5f/chat.json\nunknown | Imp Applet Factory Distribution Model | .imp/chats/chat-fd0269920afa/chat.json\nunknown | Link to GitHub issues page | .imp/chats/chat-a47f97f4e8c2/chat.json\nunknown | Listing root folder files | .imp/chats/chat-798160c8a876/chat.json\nunknown | Listing root folder files | .imp/chats/chat-b9bd9a1c02d0/chat.json\nunknown | New chat | .imp/chats/chat-69e7222db08e/chat.json\nunknown | New chat | .imp/chats/chat-7fc6263c81ca/chat.json\nunknown | New chat | .imp/chats/chat-851893567356/chat.json\nunknown | New chat | .imp/chats/chat-df454970203b/chat.json\nunknown | New chat | .imp/chats/chat-faf0528f7b28/chat.json\nunknown | PR: start point test | .imp/chats/chat-8503d214e606/chat.json\nunknown | Switch LLM to Kimi K2 | .imp/chats/chat-0ee4e1e355a9/chat.json\nunknown | Test tool PR and removal | .imp/chats/chat-a027520a69b9/chat.json\nunknown | Weekly issues burndown chart | .imp/chats/chat-a358d6d38856/chat.json"
+        }
+      ],
+      "thinking": [
+        "The user wants to delete conversation history (chats) that are older than the \"Five Day Burndown Chart Request\" from May 5, 01:07. Let me first check what tool is available for this - I see `clean_chats` in the imp tools. Let me first list the chats to see what's there, then use the clean tool.\n\nLet me first check what the clean_chats tool does.",
+        "The `clean_chats` tool deletes ALL chats. The user wants to selectively delete only chats older than a specific one. Let me look at the chat files to understand their format and find which ones are older than May 5."
+      ],
+      "blocks": [
+        {
+          "type": "thinking",
+          "text": "The user wants to delete conversation history (chats) that are older than the \"Five Day Burndown Chart Request\" from May 5, 01:07. Let me first check what tool is available for this - I see `clean_chats` in the imp tools. Let me first list the chats to see what's there, then use the clean tool.\n\nLet me first check what the clean_chats tool does."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --help 2>&1",
+            "description": "Check clean_chats tool usage"
+          },
+          "status": "ok",
+          "duration_s": 1.0202907499988214,
+          "output": "usage: clean_chats.py [-h] [--include-logs] [--dry-run]\n\nClean up Imp chat history and logs\n\noptions:\n  -h, --help      show this help message and exit\n  --include-logs  Also delete execution logs in public/logs/\n  --dry-run       Show what would be deleted without actually deleting"
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "ls -lt ~/.claude/projects/-Users-kasparkallas-Documents-GitHub-Imp/chats/ 2>/dev/null || echo \"No chats dir found\"; ls -lt ~/.claude/chats/ 2>/dev/null | head -30 || echo \"No global chats dir\"",
+            "description": "List chat history files"
+          },
+          "status": "ok",
+          "duration_s": 0.03503912499945727,
+          "output": "No chats dir found"
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "python3 tools/imp/clean_chats.py --dry-run 2>&1",
+            "description": "Dry run to see what clean_chats would delete"
+          },
+          "status": "ok",
+          "duration_s": 0.05352804100039066,
+          "output": "  would delete: .imp/chats/chat-0ee4e1e355a9\n  would delete: .imp/chats/chat-145a0e9a23dc\n  would delete: .imp/chats/chat-5a81ce46c95f\n  would delete: .imp/chats/chat-686167544d5f\n  would delete: .imp/chats/chat-69e7222db08e\n  would delete: .imp/chats/chat-798160c8a876\n  would delete: .imp/chats/chat-7fc6263c81ca\n  would delete: .imp/chats/chat-8503d214e606\n  would delete: .imp/chats/chat-851893567356\n  would delete: .imp/chats/chat-8695cac58e65\n  would delete: .imp/chats/chat-8993631ef219\n  would delete: .imp/chats/chat-995d67b438bf\n  would delete: .imp/chats/chat-a027520a69b9\n  would delete: .imp/chats/chat-a358d6d38856\n  would delete: .imp/chats/chat-a47f97f4e8c2\n  would delete: .imp/chats/chat-b73c30dde219\n  would delete: .imp/chats/chat-b9bd9a1c02d0\n  would delete: .imp/chats/chat-cc5764033984\n  would delete: .imp/chats/chat-df454970203b\n  would delete: .imp/chats/chat-e1ac18cca9fc\n  would delete: .imp/chats/chat-ebdfb1938d4b\n  would delete: .imp/chats/chat-faf0528f7b28\n  would delete: .imp/chats/chat-fd0269920afa\nchats: would delete 23 item(s)\n\nWould delete 23 item(s) total."
+        },
+        {
+          "type": "thinking",
+          "text": "The `clean_chats` tool deletes ALL chats. The user wants to selectively delete only chats older than a specific one. Let me look at the chat files to understand their format and find which ones are older than May 5."
+        },
+        {
+          "type": "tool",
+          "name": "Bash",
+          "args": {
+            "command": "for f in .imp/chats/chat-*/chat.json; do\n  ts=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('created','') or d.get('timestamp','') or d.get('started','') or 'unknown')\" 2>/dev/null || echo \"parse-error\")\n  title=$(python3 -c \"import json; d=json.load(open('$f')); print(d.get('title','(no title)')[:60])\" 2>/dev/null || echo \"parse-error\")\n  echo \"$ts | $title | $f\"\ndone | sort",
+            "description": "List all chats with timestamps and titles"
+          },
+          "status": "ok",
+          "duration_s": 3.992659667001135,
+          "output": "unknown | 10-Day Burndown Chart Creation | .imp/chats/chat-b73c30dde219/chat.json\nunknown | 10-Day Issue Burndown Chart | .imp/chats/chat-e1ac18cca9fc/chat.json\nunknown | 12-Day Burndown Chart Creation | .imp/chats/chat-995d67b438bf/chat.json\nunknown | 7-Day Burndown Chart Request | .imp/chats/chat-ebdfb1938d4b/chat.json\nunknown | Check OpenOuter API Key Setup | .imp/chats/chat-8993631ef219/chat.json\nunknown | Check OpenRouter API Key Setup | .imp/chats/chat-5a81ce46c95f/chat.json\nunknown | Clear all chat history | .imp/chats/chat-145a0e9a23dc/chat.json\nunknown | Create test_tool8 message parameter | .imp/chats/chat-8695cac58e65/chat.json\nunknown | Five Day Burndown Chart Request | .imp/chats/chat-cc5764033984/chat.json\nunknown | Five day burndown chart creation | .imp/chats/chat-686167544d5f/chat.json\nunknown | Imp Applet Factory Distribution Model | .imp/chats/chat-fd0269920afa/chat.json\nunknown | Link to GitHub issues page | .imp/chats/chat-a47f97f4e8c2/chat.json\nunknown | Listing root folder files | .imp/chats/chat-798160c8a876/chat.json\nunknown | Listing root folder files | .imp/chats/chat-b9bd9a1c02d0/chat.json\nunknown | New chat | .imp/chats/chat-69e7222db08e/chat.json\nunknown | New chat | .imp/chats/chat-7fc6263c81ca/chat.json\nunknown | New chat | .imp/chats/chat-851893567356/chat.json\nunknown | New chat | .imp/chats/chat-df454970203b/chat.json\nunknown | New chat | .imp/chats/chat-faf0528f7b28/chat.json\nunknown | PR: start point test | .imp/chats/chat-8503d214e606/chat.json\nunknown | Switch LLM to Kimi K2 | .imp/chats/chat-0ee4e1e355a9/chat.json\nunknown | Test tool PR and removal | .imp/chats/chat-a027520a69b9/chat.json\nunknown | Weekly issues burndown chart | .imp/chats/chat-a358d6d38856/chat.json"
+        }
+      ]
+    }
+  ]
+}

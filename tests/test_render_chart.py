@@ -9,7 +9,7 @@ heuristics tests use), then test render_chart against it. The chained
 fixture keeps both layers honest — if the heuristics output shape ever
 drifts, render_chart's tests fail loudly.
 
-Output is written to a tempdir to avoid touching `.imp/output/`.
+Output is written to a tempdir to avoid touching `.nilsson/output/`.
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ rc = SimpleNamespace(
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_issues.json"
 TODAY = date(2026, 4, 15)
 
-_TMP_DIR = Path(tempfile.mkdtemp(prefix="imp-render-test-"))
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="nilsson-render-test-"))
 
 
 def _load_enriched() -> dict:
@@ -265,7 +265,7 @@ def test_build_mermaid_gantt_groups_by_milestone_then_label() -> None:
     enriched = _load_enriched()
     mermaid, _, _ = rc.build_mermaid_gantt(enriched)
 
-    # Fixture #11 has milestone "Phase 4 — Foreman & visibility tools"
+    # Fixture #11 has milestone "Phase 4 — Nilsson & visibility tools"
     assert "section Phase 4" in mermaid
     # Fixtures #12, #13, #16 have no milestone but area:pipeline label
     assert "section area:pipeline" in mermaid
@@ -692,7 +692,7 @@ def test_burndown_render_html_surfaces_excluded_count() -> None:
 
 
 def test_build_burndown_plotly_figure_has_expected_traces() -> None:
-    """The Plotly figure used by the Foreman chat UI should carry the
+    """The Plotly figure used by the Nilsson chat UI should carry the
     same series the HTML template renders — 'Remaining (actual)' and
     'Ideal' — with x=labels and y matching the context."""
     enriched = _load_enriched()

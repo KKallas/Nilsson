@@ -60,7 +60,7 @@ def build_mermaid_gantt(enriched: dict[str, Any]) -> tuple[str, list[dict], list
         sections.setdefault(_section_for(entry[0]), []).append(entry)
 
     title = enriched.get("repo") or "Project"
-    lines = ["gantt", f"    title {title} — Imp Gantt", "    dateFormat YYYY-MM-DD", "    axisFormat %Y-%m-%d"]
+    lines = ["gantt", f"    title {title} — Nilsson Gantt", "    dateFormat YYYY-MM-DD", "    axisFormat %Y-%m-%d"]
     renderable_meta: list[dict] = []
 
     for section_name in sorted(sections):

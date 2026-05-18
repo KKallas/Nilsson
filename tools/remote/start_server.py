@@ -5,9 +5,9 @@ Inputs:
   --port (int, optional): Server port (default: 8421).
 
 Process: Verifies the server is running and the sync endpoints
-(/health, /imp-sync.py, /api/sync/manifest) are all accessible.
+(/health, /nilsson-sync.py, /api/sync/manifest) are all accessible.
 If everything checks out, writes a session marker file to
-.imp/remote_session.json so the server knows sync is active.
+.nilsson/remote_session.json so the server knows sync is active.
 
 Output: Prints connection details or which endpoints failed."""
 
@@ -19,7 +19,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-SESSION_FILE = Path(".imp/remote_session.json")
+SESSION_FILE = Path(".nilsson/remote_session.json")
 
 
 def get_lan_ip():
@@ -59,7 +59,7 @@ def main() -> int:
     print("Checking endpoints...")
     ok = True
     ok &= check_endpoint(f"{base}/health", "/health")
-    ok &= check_endpoint(f"{base}/imp-sync.py", "/imp-sync.py")
+    ok &= check_endpoint(f"{base}/nilsson-sync.py", "/nilsson-sync.py")
     ok &= check_endpoint(f"{base}/api/sync/manifest", "/api/sync/manifest")
 
     if not ok:
@@ -78,8 +78,8 @@ def main() -> int:
     SESSION_FILE.write_text(json.dumps(session, indent=2))
 
     print(f"\nRemote session active at {url}")
-    print(f"Sync script:  {url}/imp-sync.py")
-    print(f"Run on client: curl -o imp-sync.py {url}/imp-sync.py && python imp-sync.py")
+    print(f"Sync script:  {url}/nilsson-sync.py")
+    print(f"Run on client: curl -o nilsson-sync.py {url}/nilsson-sync.py && python nilsson-sync.py")
     return 0
 
 

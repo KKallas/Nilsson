@@ -1,0 +1,2095 @@
+{
+  "synced_at": "2026-04-18T13:26:26.104587+00:00",
+  "repo": "KKallas/Imp",
+  "project_number": null,
+  "project_owner": "KKallas",
+  "issue_count": 37,
+  "issues": [
+    {
+      "assignees": [],
+      "body": "## Problem\n\nWhen creating issue #71, the `create_issue` MCP tool:\n\n1. **Has no `milestone` parameter** \u2014 forcing a workaround via `run_shell` with raw `gh issue create`\n2. **Guard rejected valid labels** (e.g. `bug`) and milestone assignment on the first attempt, requiring a retry\n\nThis makes issue creation a multi-step pain:\n- First call to `create_issue` fails or is incomplete\n- Then need `run_shell` as escape hatch\n- Or create bare issue + `edit_issue` to add milestone after the fact\n\n## Expected behavior\n\n- `create_issue` tool should accept a `milestone` parameter and pass it through to `gh issue create --milestone`\n- Guard should allow standard labels (`bug`, `enhancement`, etc.) and milestone assignment when creating issues\n- Single tool call should be sufficient to create a fully-formed issue\n\n## Files likely involved\n\n- `server/intercept.py` \u2014 tool parameter schema for `create_issue`\n- `server/guard.py` \u2014 label/milestone validation rules\n- MCP tool definitions",
+      "closedAt": null,
+      "createdAt": "2026-04-18T09:15:11Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACXrwvvw",
+          "name": "bug",
+          "description": "Something isn't working",
+          "color": "d73a4a"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 72,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "create_issue tool missing milestone parameter and guard rejects valid labels",
+      "updatedAt": "2026-04-18T09:15:11Z",
+      "url": "https://github.com/KKallas/Imp/issues/72",
+      "fields": {
+        "duration_days": {
+          "value": 3,
+          "source": "heuristic",
+          "confidence": "low"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-21",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "## Problem\n\nWhen rendering a grouped bar chart (e.g. Opened vs Closed issues per day), the bars for each category are drawn **stacked/overlapping** rather than **side-by-side**. If the first series has a higher value than the second, the second bar is completely hidden behind the first.\n\n### Expected behavior\nEach day should show **two bars next to each other** \u2014 one for Opened, one for Closed \u2014 like a standard grouped bar chart.\n\n### Actual behavior\nBoth bars are drawn at the same x-position, fully overlapping. The shorter bar is invisible.\n\n### Reproduction\n```\nbar \"Opened\" [0, 0, 2, 6, 1, 8, 2]\nbar \"Closed\" [1, 0, 5, 6, 1, 5, 0]\n```\nOn Apr 14 for example, Opened=2 and Closed=5 \u2014 but only the Closed bar is visible because it's taller and covers the Opened bar entirely. On Apr 17, Opened=8 and Closed=5 \u2014 only the Opened bar is visible.\n\n### Fix\nThe renderer should offset each series by `bar_width / n_series` so grouped bars sit adjacent within each x-tick group, not on top of each other. Standard Plotly approach: use `barmode='group'` or manually offset trace `x` positions.",
+      "closedAt": null,
+      "createdAt": "2026-04-18T09:13:00Z",
+      "labels": [],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 71,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "Bar chart renderer draws grouped bars on top of each other instead of side-by-side",
+      "updatedAt": "2026-04-18T09:13:00Z",
+      "url": "https://github.com/KKallas/Imp/issues/71",
+      "fields": {
+        "duration_days": {
+          "value": 3,
+          "source": "heuristic",
+          "confidence": "low"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-21",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nThe chat sidebar is broken in several ways: messages vanish on page\nrefresh, empty stub sessions appear unprompted, and the UX around\ncreating vs resuming chats is confusing. This issue fixes the\npersistence model and simplifies the sidebar to behave predictably.\n\n**Priority**: before all other open issues \u2014 the admin can't trust the\ntool if their conversation disappears on refresh.\n\n## Current problems\n\n### 1. Text goes missing on page refresh\n\nWhen the browser tab is refreshed:\n\n1. `cl.user_session` (in-memory dict) is wiped by Chainlit.\n2. `@cl.on_chat_start` fires and calls `_start_new_chat_session()`,\n   which generates a **new** UUID and writes a new stub file \u2014\n   instead of resuming the session that was just active.\n3. The old session's file is on disk but the in-memory reference is\n   gone. `_current_session()` returns `None` or points at the new\n   empty stub, so subsequent messages are orphaned or lost.\n\nAdditionally, if the page refreshes mid-dispatch (after user turn is\nappended but before assistant reply is), the assistant response is\nnever persisted \u2014 the turn is recorded but the response is lost.\n\n**Root**: `main.py:1012-1013` \u2014 `_current_session()` returns None\nwhen `cl.user_session` has been cleared by Chainlit on reconnect.\n\n### 2. Random empty chats appearing in sidebar\n\n`data_layer.py:update_thread()` (lines 107-119) creates a 237-byte\nstub `ChatSession` every time Chainlit calls it \u2014 even for sessions\nthat were never explicitly started by the user. These stub files\n(zero turns, no title) appear in the sidebar listing alongside real\nconversations.\n\n**Root**: `data_layer.py:113` creates a stub on every\n`update_thread()` call if the session doesn't exist on disk.\n\n### 3. No default \"resume previous\" behaviour\n\nOn page load, the app always enters `@cl.on_chat_start` which creates\na fresh session. The user has to manually click a past chat in the\nsidebar to resume it. There's no concept of \"reopen the last active\nchat.\"\n\n## Proposed behaviour\n\n### Default to resume\n\n- On page load, automatically resume the **most recent** chat session\n  (by `last_active_at`).\n- User explicitly creates a new chat via the \"New Chat\" button (the\n  `confirm_new_chat = true` config is already set).\n- User can delete old chats from the sidebar.\n\n### No stub creation\n\n- `update_thread()` should **not** create stub files. Only\n  `_start_new_chat_session()` (explicit new chat) creates a session\n  file.\n- On startup, prune orphaned stubs (files with zero turns and no\n  `last_active_at` within the last hour).\n\n### Date-stamped titles in sidebar\n\nWhen a new chat is created, its sidebar title should use the format:\n\n```\n[Apr 17 14:32] Chat title here\n```\n\nThe date-time prefix should be visually smaller / muted compared to\nthe title text. If Chainlit's sidebar doesn't support rich formatting,\nuse the plain format above \u2014 the brackets + short date keep it\ncompact.\n\n### Simplify persistence\n\nThe full conversation text is what gets sent to Claude on each turn.\nThe chat session file on disk is a convenience for sidebar listing\nand resume \u2014 not the source of truth for the LLM context. Given\nthis:\n\n- Drop the `chat-XXXX` synthetic ID scheme. Use Chainlit's\n  `thread_id` directly as the session ID to avoid ID mismatches\n  between Chainlit's in-memory state and our on-disk files.\n- Keep the JSON file as the persistence layer (atomic writes via\n  `.tmp` + `rename` are already correct) but align the file naming\n  to use `thread_id` as the primary key.\n\n## References\n\n- Current implementation: `server/chat_history.py` (509 lines),\n  `server/data_layer.py`, `main.py:456-503` (lifecycle),\n  `main.py:1012-1039` (turn persistence)\n- Chainlit config: `.chainlit/config.toml` (`session_timeout=3600`,\n  `confirm_new_chat=true`)\n- Chat files: `.imp/chats/*.json`\n\n## Files touched\n\n- `server/chat_history.py` \u2014 session resume logic, drop synthetic IDs,\n  date-stamped titles, stub pruning\n- `server/data_layer.py` \u2014 stop creating stubs in `update_thread()`\n- `main.py` \u2014 `on_chat_start` resumes last session, `on_chat_resume`\n  simplified\n\n## Acceptance criteria\n\n- [ ] Page refresh resumes the same chat \u2014 no new stub created, no\n      messages lost\n- [ ] Sidebar shows only real conversations (no empty stubs)\n- [ ] New chats require explicit \"New Chat\" click\n- [ ] Sidebar titles show `[date time] title` format\n- [ ] `update_thread()` never creates stub files\n- [ ] Orphaned stubs pruned on startup\n- [ ] Assistant replies mid-dispatch survive page refresh (saved\n      before dispatch, updated after)\n- [ ] Chat ID uses Chainlit's `thread_id` directly \u2014 no synthetic\n      `chat-XXXX`\n\n## Out of scope\n\n- Multi-user chat isolation (single-admin app)\n- Chat export / import\n- Search within past chats",
+      "closedAt": "2026-04-17T21:21:24Z",
+      "createdAt": "2026-04-17T15:20:06Z",
+      "labels": [],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 62,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.25] chat sidebar \u2014 fix persistence, default to resume, date-stamped titles",
+      "updatedAt": "2026-04-18T08:30:04Z",
+      "url": "https://github.com/KKallas/Imp/issues/62",
+      "fields": {
+        "duration_days": {
+          "value": 3,
+          "source": "heuristic",
+          "confidence": "low"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nAdd a rendering service that turns parameterised HTML templates into\nPNG screenshots for inline chat display, while keeping the interactive\nHTML one click away. This closes the gap where Mermaid and Plotly\noutput currently shows as raw code or doesn't render inline \u2014 instead,\nevery visualisation type gets a static preview image in the chat message\nand a link to the live interactive page.\n\nThe system has three layers:\n\n1. **Template service** \u2014 Jinja2 HTML templates that accept data via\n   URL query parameters (`?data=...&title=...`). Served by a lightweight\n   route on the Chainlit server.\n2. **Screenshot engine** \u2014 headless browser (Playwright) that renders\n   the template URL to a PNG and returns the image bytes.\n3. **Renderer plugins** \u2014 a folder structure (`renderers/<type>/`) where\n   each plugin is a fully self-contained folder with its own template,\n   renderer logic, assets, and tests.\n\n## URL contract\n\n```\nGET /render/<type>?var1=val1&var2=val2             \u2192 PNG image (default)\nGET /render/<type>?var1=val1&var2=val2&mode=viewer \u2192 interactive HTML page\n```\n\nWhen `mode` is omitted (or `mode=image`), the server renders the HTML\ntemplate, screenshots it via Playwright, and returns `image/png`. When\n`mode=viewer`, it returns the live HTML directly \u2014 same template, same\ndata, but the user gets the interactive version (hover, zoom, click).\n\nThis means a single URL encodes both the static preview and the\ninteractive experience. Chat messages embed:\n\n```markdown\n[![Gantt chart](https://\u2026/render/gantt?data=\u2026)](https://\u2026/render/gantt?data=\u2026&mode=viewer)\n```\n\nImage in the chat, click opens the interactive page.\n\n## Renderer plugin structure\n\nEvery visualisation type is a **self-contained folder** \u2014 template,\nrenderer logic, assets, and tests all live together. No split between\na `renderers/` tree and a separate `templates/` tree. Each folder is\nthe single source of truth for that chart type.\n\n```\nrenderers/\n\u251c\u2500\u2500 __init__.py              # plugin discovery (scan subdirs for renderer.py)\n\u251c\u2500\u2500 base.py                  # BaseRenderer ABC + shared helpers\n\u2502\n\u251c\u2500\u2500 mermaid/                 # generic mermaid diagrams\n\u2502   \u251c\u2500\u2500 renderer.py          # parse ```mermaid block \u2192 template vars\n\u2502   \u251c\u2500\u2500 template.html.j2     # standalone HTML that loads mermaid.min.js\n\u2502   \u2514\u2500\u2500 test_mermaid.py\n\u2502\n\u251c\u2500\u2500 plotly/                  # raw plotly JSON figures\n\u2502   \u251c\u2500\u2500 renderer.py          # parse plotly JSON \u2192 template vars\n\u2502   \u251c\u2500\u2500 template.html.j2     # standalone HTML with plotly.js CDN\n\u2502   \u2514\u2500\u2500 test_plotly.py\n\u2502\n\u251c\u2500\u2500 gantt/                   # gantt timeline (migrated from templates/gantt.html.j2)\n\u2502   \u251c\u2500\u2500 renderer.py          # wraps existing build_context_for_gantt()\n\u2502   \u251c\u2500\u2500 template.html.j2     # moved from templates/gantt.html.j2\n\u2502   \u251c\u2500\u2500 sample.json          # example input for manual testing\n\u2502   \u2514\u2500\u2500 test_gantt.py\n\u2502\n\u251c\u2500\u2500 burndown/                # burndown chart\n\u2502   \u251c\u2500\u2500 renderer.py          # wraps existing build_context_for_burndown()\n\u2502   \u251c\u2500\u2500 template.html.j2     # moved from templates/burndown.html.j2\n\u2502   \u2514\u2500\u2500 test_burndown.py\n\u2502\n\u251c\u2500\u2500 kanban/                  # kanban board\n\u2502   \u251c\u2500\u2500 renderer.py          # wraps existing build_context_for_kanban()\n\u2502   \u251c\u2500\u2500 template.html.j2     # moved from templates/kanban.html.j2\n\u2502   \u2514\u2500\u2500 test_kanban.py\n\u2502\n\u251c\u2500\u2500 comparison/              # side-by-side scenario comparison\n\u2502   \u251c\u2500\u2500 renderer.py          # wraps existing build_context_for_comparison()\n\u2502   \u251c\u2500\u2500 template.html.j2     # moved from templates/comparison.html.j2\n\u2502   \u2514\u2500\u2500 test_comparison.py\n\u2502\n\u251c\u2500\u2500 scatter/                 # scatter plot (new)\n\u2502   \u251c\u2500\u2500 renderer.py\n\u2502   \u251c\u2500\u2500 template.html.j2\n\u2502   \u2514\u2500\u2500 test_scatter.py\n\u2502\n\u2514\u2500\u2500 bar/                     # bar graph (new)\n    \u251c\u2500\u2500 renderer.py\n    \u251c\u2500\u2500 template.html.j2\n    \u2514\u2500\u2500 test_bar.py\n```\n\nThe existing `templates/` folder is retired \u2014 its `.html.j2` files\nmove into their respective `renderers/<type>/` folders. `fields.json`\nmoves to `renderers/fields.json` (shared schema).\n\nEach `renderer.py` exposes a class implementing `BaseRenderer`:\n\n```python\n# renderers/base.py\nclass BaseRenderer(ABC):\n    name: str                              # folder name, used in /render/<name>\n    block_type: str | None = None          # fenced code-block lang tag (None = not triggered by markdown blocks)\n\n    @abstractmethod\n    def parse(self, raw: str | dict) -> dict:\n        \"\"\"Extract template variables from raw input (markdown block or JSON).\"\"\"\n\n    def template_path(self) -> Path:\n        \"\"\"Default: template.html.j2 in the same folder as renderer.py.\"\"\"\n        return Path(__file__).parent / self.name / \"template.html.j2\"\n\n    def build_url(self, params: dict, base: str) -> str:\n        \"\"\"Build the /render/... URL with encoded params.\"\"\"\n        ...\n```\n\n```python\n# renderers/mermaid/renderer.py\nclass MermaidRenderer(BaseRenderer):\n    name = \"mermaid\"\n    block_type = \"mermaid\"\n\n    def parse(self, raw: str) -> dict:\n        return {\"diagram\": raw}\n```\n\n### Adding a new chart type\n\nTo add a new visualisation (e.g. `heatmap`):\n\n1. Create `renderers/heatmap/`\n2. Add `renderer.py` with a class extending `BaseRenderer`\n3. Add `template.html.j2` with the HTML/JS to render it\n4. Optional: add `test_heatmap.py` and `sample.json`\n\nPlugin discovery in `renderers/__init__.py` auto-scans subdirectories\nfor `renderer.py` \u2014 no central registry to update.\n\n## Markdown post-processor\n\nA function in `server/` that:\n\n1. Scans the assistant's markdown output for fenced code blocks\n   matching a registered renderer's `block_type`\n2. Calls `renderer.parse(block)` \u2192 template vars\n3. Calls the screenshot service \u2192 PNG bytes \u2192 saves to `public/images/`\n4. Replaces the code block with `[![alt](image_url)](viewer_url)`\n\nThis runs as a post-processing step before the message is sent to\nChainlit, so the user sees a rendered image instead of raw syntax.\n\n## Screenshot engine\n\n```python\n# server/screenshot.py\nasync def screenshot(renderer_name: str, params: dict, *, width=1200, height=800) -> bytes:\n    \"\"\"Render a template URL in headless Chromium and return PNG bytes.\"\"\"\n    url = f\"http://localhost:{PORT}/render/{renderer_name}?{urlencode(params)}\"\n    async with async_playwright() as p:\n        browser = await p.chromium.launch()\n        page = await browser.new_page(viewport={\"width\": width, \"height\": height})\n        await page.goto(url, wait_until=\"networkidle\")\n        png = await page.screenshot(full_page=True)\n        await browser.close()\n    return png\n```\n\nCache the browser instance across calls to avoid cold-start on every\nrender. Consider a process-level singleton with a warm Chromium\ninstance that resets between screenshots.\n\n## Integration with existing pipeline\n\n- **`render_chart.py`** \u2014 existing builder functions\n  (`build_context_for_gantt()`, etc.) are wrapped by each plugin's\n  `renderer.py`. The builders stay in `render_chart.py` as shared\n  logic; the plugin just calls them and returns template vars.\n  Over time the builders can migrate into their plugin folders.\n- **`main.py:_render_chart_file()`** \u2014 instead of only doing\n  `cl.Plotly()` for burndown and markdown links for others, all\n  types get a screenshot preview + interactive link.\n- **`mermaid_to_plotly.py`** \u2014 the mermaid renderer plugin replaces\n  this workaround. Mermaid blocks render natively via the template\n  service screenshot rather than being converted to Plotly.\n\n## References\n\n- #55 \u2014 Foreman turn UI (the context where inline rendering matters)\n- #24 \u2014 Chainlit control surfaces (will consume rendered images)\n- Existing templates: `templates/gantt.html.j2`, `burndown.html.j2`,\n  `kanban.html.j2`, `comparison.html.j2`\n- Current rendering: `pipeline/render_chart.py`, `main.py:1424-1481`\n\n## Files touched\n\n- `server/screenshot.py` \u2014 **new** \u2014 headless screenshot engine\n- `server/render_route.py` \u2014 **new** \u2014 `/render/<type>` Chainlit route\n- `server/md_postprocess.py` \u2014 **new** \u2014 markdown block \u2192 image replacer\n- `renderers/` \u2014 **new** \u2014 plugin folder (mermaid, plotly, gantt, burndown, kanban, comparison, scatter, bar)\n- `renderers/base.py` \u2014 **new** \u2014 BaseRenderer ABC\n- `pipeline/render_chart.py` \u2014 keep builder functions, called by plugins\n- `main.py` \u2014 register render route, wire post-processor before send\n- `templates/` \u2014 **retired** \u2014 contents moved into `renderers/<type>/`\n- `pyproject.toml` \u2014 add `playwright` dependency\n\n## Acceptance criteria\n\n- [ ] `GET /render/mermaid?diagram=graph+TD;A-->B` returns a PNG\n- [ ] Same URL with `&mode=viewer` returns interactive HTML with live Mermaid\n- [ ] Mermaid fenced code blocks in assistant output are auto-replaced with inline images + clickable links\n- [ ] Plotly JSON output renders as screenshot with interactive link\n- [ ] Existing chart types (gantt, burndown, kanban, comparison) work through the new plugin system with no regression\n- [ ] New chart types (scatter, bar) render correctly\n- [ ] Browser instance is pooled \u2014 no cold Chromium launch per screenshot\n- [ ] Screenshots are cached by content hash \u2014 identical content returns cached PNG\n- [ ] Adding a new chart type requires only creating a new folder under `renderers/` \u2014 no central registry changes\n- [ ] `templates/` folder is retired, all `.html.j2` files live in their plugin folders\n\n## Out of scope (defer)\n\n- PDF export (future \u2014 same screenshot engine, different output format)\n- Custom CSS themes for templates (v2)\n- Remote rendering service (keep it local/in-process for now)",
+      "closedAt": "2026-04-17T15:14:31Z",
+      "createdAt": "2026-04-17T12:16:34Z",
+      "labels": [],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 60,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.24] renderers \u2014 template-based HTML\u2192PNG screenshot service with plugin folder",
+      "updatedAt": "2026-04-18T08:29:57Z",
+      "url": "https://github.com/KKallas/Imp/issues/60",
+      "fields": {
+        "duration_days": {
+          "value": 3,
+          "source": "heuristic",
+          "confidence": "low"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nReplace today's tool-call presentation in `server/foreman_agent.py:dispatch`\nwith a structured **plan \u2192 execute \u2192 reason** flow. Right now every tool\ncall lands as its own `_Using tool:_ name` + `json` chat message, the\nfinal assistant reply is posted in a single non-streamed block after the\nSDK finishes, and the model's thinking is never surfaced. The admin\nsees *what* ran, never *why* it was chosen or what the model concluded\nbetween calls.\n\nGoals, in priority order:\n\n1. **Show the plan before it runs.** When the model announces tool calls\n   for the turn, render a checklist of intended tools *first* \u2014 not a\n   ragged stream of \\\"Using tool:\\\" messages interleaved with output.\n2. **Collapse per-tool chatter into a status checklist.** Each tool is a\n   single line with a status: `\u23f3 waiting` \u2192 `\u2705 ok` / `\u274c error`. No json\n   arg dump and no bash output dump in the primary view \u2014 the full\n   call + output lives inside the foldable step for the curious.\n3. **Stream the post-tool reasoning.** After tools resolve, the model's\n   follow-up prose should token-stream into the chat rather than block\n   until the full turn finishes.\n4. **Foldable live thinking.** Expose the SDK's thinking/reasoning blocks\n   in a collapsed-by-default `cl.Step` that updates live, so the admin\n   can pop it open mid-turn to watch the model reason in real time.\n\n## Current behaviour (before)\n\nIn [server/foreman_agent.py:1399-1434](server/foreman_agent.py#L1399-L1434):\n\n```python\nasync for message in client.receive_response():\n    if isinstance(message, AssistantMessage):\n        for block in message.content:\n            if isinstance(block, TextBlock):\n                assistant_chunks.append(block.text)        # buffered, not streamed\n            elif isinstance(block, ToolUseBlock):\n                await say(                                   # one chat message per tool\n                    f\\\"_Using tool:_ \\`{block.name}\\`\\n\\\"\n                    f\\\"```json\\n{args_preview}\\n```\\\"\n                )\n# ...\nreply = \\\"\\\".join(assistant_chunks).strip()\nif reply:\n    await say(reply)\n```\n\nProblems:\n- Admin sees raw JSON args but not *why* the tool was picked.\n- Each tool call is a new top-level chat message \u2014 vertical spam.\n- Tool output is echoed into the `intercept.py` log step, then into the\n  model's next assistant chunk, then the final reply \u2014 triple reading.\n- Thinking blocks emitted by the SDK are discarded.\n\n## Proposed flow (after)\n\n**One** pinned assistant message per turn, composed of:\n\n### Header \u2014 plan checklist\n\n`Foreman's plan:` followed by an ordered checklist:\n\n- [ ] `list_issues(state=\\\"open\\\", label=\\\"in-progress\\\")` \u2014 *to see what's actively being worked*\n- [ ] `get_issue(number=42)` \u2014 *needs the latest comment thread before proposing next step*\n- [ ] `run_render_chart(kind=\\\"burndown\\\")` \u2014 *to attach an updated burndown to the reply*\n\nBuilt from the first `ToolUseBlock` batch before any tool executes. If\nthe model emits calls in waves (pre-tool plan + post-result follow-ups),\nappend new entries as they arrive rather than rewriting the whole list.\n\n### Execution \u2014 status only\n\nEach checkbox flips to `\u2705` / `\u274c` as the matching tool result lands.\nStatus text shows `\u00b7 1.2s` duration and `\u00b7 rc=0` where applicable. No\nother chat messages for tool noise.\n\n### Foldable details per tool\n\nInside each checklist row, a `cl.Step(default_open=False, type=\\\"tool\\\")`:\n- **Input:** the tool name + args (the JSON that today goes straight to chat).\n- **Output:** what the tool returned, trimmed to ~2KB with a\n  `\u2026 truncated, N bytes total` tail and the full payload attached as a\n  `cl.File` for deep dives.\n\n### Streamed reasoning\n\nAssistant `TextBlock`s arriving after tool results stream in real time\n(append via `cl.Message.stream_token()` or equivalent). The existing\nbuffer-and-post-at-end pattern is replaced with incremental updates.\n\n### Foldable thinking step\n\nA single top-of-turn `cl.Step(name=\\\"Foreman's thinking\\\", type=\\\"run\\\",\ndefault_open=False)` that appends every thinking/reasoning block (if the\nSDK exposes them \u2014 investigate `ClaudeSDKClient` response types beyond\n`AssistantMessage` / `ResultMessage`) as a bullet with a wall-clock\ntimestamp. Collapsed by default; admin pops it open to watch live.\n\n## Files touched\n\n- [server/foreman_agent.py](server/foreman_agent.py) \u2014 rework the\n  `receive_response` loop; introduce a `TurnRenderer` helper that owns\n  the checklist, streaming message, and thinking step so `dispatch`\n  stays readable.\n- [main.py](main.py) \u2014 `_foreman_say` currently assumes one-shot\n  `cl.Message` posts. Add a `_foreman_stream_start()` /\n  `_foreman_stream_token()` / `_foreman_stream_end()` seam (or pass a\n  callback object via `dispatch(...)`) so streaming works without\n  `server/foreman_agent.py` importing Chainlit directly.\n- Tests: unit coverage for the renderer with a fake `AssistantMessage`\n  stream (plan \u2192 tool batch \u2192 tool results \u2192 text stream \u2192 another\n  tool batch \u2192 final text).\n\n## References\n\n- KKallas/Imp#24 \u2014 Chainlit control surfaces (TaskList + abort). The\n  checklist here is *per turn*; the TaskList there is *per running\n  subprocess*. They don't overlap but should visually rhyme.\n- KKallas/Imp#45 \u2014 Chat history. Streaming text must still end up in the\n  persisted transcript.\n- v0.1.md *The Agent's Role* \u2014 the system prompt this UI wraps.\n\n## Acceptance criteria\n\n- [ ] A turn with N tool calls produces exactly **one** top-level chat\n  message per assistant reply, containing the plan-checklist header +\n  streamed reasoning. No `_Using tool:_` spam.\n- [ ] Each checklist item flips from \u23f3 \u2192 \u2705/\u274c in real time as the tool\n  resolves; status includes duration and return code where applicable.\n- [ ] Clicking a checklist item (or the associated `cl.Step`) reveals\n  the full tool args and output; default state is collapsed.\n- [ ] Post-tool assistant prose renders token-by-token (visibly\n  streaming) rather than appearing as a finished block at turn end.\n- [ ] A foldable `Foreman's thinking` step appears at the start of\n  every turn, collapsed by default, updating live as the SDK emits\n  thinking blocks. If the SDK version in use doesn't expose them yet,\n  the step is created but empty \u2014 note the SDK version gap as a\n  follow-up comment rather than blocking the rest of the work.\n- [ ] No regression for turns with zero tool calls \u2014 they render as\n  today: single streamed assistant message, no checklist.\n- [ ] `tests/` covers: tool-batch-before-text, interleaved tool batches,\n  tool failure, zero tools, thinking-block presence/absence.\n- [ ] `server/foreman_agent.py` stays UI-framework-agnostic \u2014 it talks\n  to `main.py` through the existing seam (`say`, `thinking`, `chart`)\n  extended with streaming primitives; no direct `chainlit` imports in\n  `server/`.\n\n## Out of scope\n\n- Changing *which* tools Foreman has access to.\n- Persisting turn transcripts for replay (KKallas/Imp#45 covers that).\n- Cancel-a-plan-mid-execution (KKallas/Imp#24 abort button covers that\n  once the running-tasks map lands).\n- Rewriting the `intercept.py` verdict / log-sidebar UX \u2014 only the SDK\n  tool-call surface changes here.",
+      "closedAt": "2026-04-17T12:05:06Z",
+      "createdAt": "2026-04-16T05:52:37Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 55,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.23] Foreman tool-calling UX \u2014 plan, checklist, streamed reasoning, foldable thinking",
+      "updatedAt": "2026-04-18T08:29:47Z",
+      "url": "https://github.com/KKallas/Imp/issues/55",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-16",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nForeman occasionally generates mermaid syntax in its chat replies\neven though Chainlit can't render mermaid (and the system prompt\nexplicitly tells it not to). When that happens, the user sees raw\nmermaid code instead of a chart. This issue adds a **watchdog in\n`main.py._foreman_say`**: scan every outbound Foreman reply for\nfenced mermaid blocks, convert supported ones (gantt for now) to\ninline `cl.Plotly` elements, and strip them from the text.\n\nNet effect: the system prompt is no longer the only line of defence\n\u2014 even when Foreman ignores the instruction, the watchdog catches\nthe mermaid before it lands in chat.\n\n## Watchdog flow\n\n```python\nasync def _foreman_say(text: str) -> None:\n    blocks = _extract_mermaid_blocks(text)\n    plotly_elements: list[cl.Plotly] = []\n    cleaned_text = text\n\n    for block in blocks:\n        if block[\"lang\"] == \"mermaid\" and block[\"content\"].lstrip().startswith(\"gantt\"):\n            try:\n                figure = _mermaid_gantt_to_plotly(block[\"content\"])\n                plotly_elements.append(\n                    cl.Plotly(name=\"auto-gantt\", figure=figure, display=\"inline\")\n                )\n                cleaned_text = cleaned_text.replace(block[\"raw\"], \"\")\n            except Exception as exc:\n                # Keep the original block but add a note\n                cleaned_text = cleaned_text.replace(\n                    block[\"raw\"],\n                    block[\"raw\"] + f\"\\n\\n_(watchdog couldn't parse this gantt: {exc})_\",\n                )\n        # Other mermaid types (flowchart, sequence, etc.) \u2014 leave in place\n        # with a note \"mermaid <type> isn't rendered inline yet\"\n\n    await cl.Message(\n        author=\"Foreman\",\n        content=cleaned_text.strip(),\n        elements=plotly_elements,\n    ).send()\n```\n\n## Mermaid gantt parser\n\n`pipeline/mermaid_to_plotly.py` (new):\n\n- Line-based parser, no external dependencies (mermaid grammar is\n  small enough to handle directly)\n- Recognises:\n  - `gantt`\n  - `title <text>`\n  - `dateFormat <format>`\n  - `axisFormat <format>`\n  - `excludes weekends` / `excludes <date>`\n  - `section <name>`\n  - Task lines: `Task name :id, start, duration` or\n    `Task name :tag, id, start, duration` or\n    `Task name :tag, id, after dep, duration` (chained `after`)\n- Returns the same structure `render_chart.build_mermaid_gantt`\n  produces, so we can reuse `build_plotly_figure` directly.\n\n## Foreman system prompt update\n\nThe watchdog is belt-and-suspenders, not a license to spew mermaid.\nUpdate the prompt to be even more explicit:\n\n> \"Mermaid code blocks WILL NOT RENDER in chat under any\n> circumstances. If you produce one anyway, an automated watchdog\n> will try to convert it to a Plotly chart and may fail. Use\n> `run_render_chart` for canonical charts; for one-off / custom\n> data, write a `python -c` script that builds a Plotly figure\n> dict to `.imp/output/<name>.plotly.json` and call\n> `render_plotly_file(<path>)` (added by KKallas/Imp#TBD if we\n> open it). Don't paste mermaid into your prose.\"\n\n## Other mermaid types\n\nFor mermaid blocks that aren't `gantt`:\n\n- `flowchart` / `graph` \u2014 leave as-is with a \"_(flowchart rendering\n  isn't supported inline yet)_\" note. Could add later if we find a\n  Plotly equivalent (Sankey? Network graph?)\n- `sequence`, `pie`, `state`, etc. \u2014 same: leave + note\n\n## References\n\n- KKallas/Imp#14 \u2014 render_chart (we reuse `build_plotly_figure`)\n- KKallas/Imp#46 \u2014 Guard code review (orthogonal \u2014 this is about\n  rendering, not security)\n- v0.1.md \u2014 the original \"emit mermaid blocks\" guidance (now\n  contradicted by reality; doc update is part of this issue)\n\n## Acceptance criteria\n\n- [ ] `pipeline/mermaid_to_plotly.py` exposes\n  `parse_gantt(text) -> {tasks, sections, title, ...}` and\n  `to_plotly_figure(parsed) -> dict` (or a single\n  `mermaid_gantt_to_plotly(text) -> figure`)\n- [ ] Watchdog in `main.py._foreman_say` extracts mermaid blocks,\n  converts gantt ones, attaches as `cl.Plotly`, strips from text\n- [ ] Non-gantt mermaid blocks left in place with a \"not rendered\n  inline\" note (so the user at least knows the agent meant to draw\n  something)\n- [ ] Watchdog fails soft: parse error \u2192 leave the block + note\n  the failure, don't break the whole reply\n- [ ] Foreman system prompt updated with the stronger anti-mermaid\n  language\n- [ ] v0.1.md updated to reflect reality (no more \"emit mermaid\n  blocks\" guidance for charts)\n- [ ] Tests:\n  - `_extract_mermaid_blocks` finds all fenced blocks, handles\n    nested code fences, handles missing closing fence\n  - `parse_gantt` round-trips a simple gantt + a complex one (the\n    one from the user's transcript: weekend exclusions, sections,\n    dependencies, crit tags)\n  - `to_plotly_figure` produces the expected bar shapes\n  - watchdog integration: an agent reply with a mermaid gantt block\n    produces a `cl.Plotly` element + stripped text\n  - watchdog fail-soft: a malformed mermaid gantt \u2192 original text\n    preserved + error note appended\n\n## Out of scope\n\n- Round-tripping non-gantt mermaid types (could be follow-up issues\n  per type if anyone wants it)\n- Server-side mermaid rendering (e.g. shipping the mermaid CLI and\n  rendering to PNG) \u2014 Plotly is more interactive and we already\n  have the infrastructure\n- Editing the agent's reply mid-stream (token-by-token replacement\n  of mermaid as it arrives). Static post-processing is enough.",
+      "closedAt": "2026-04-17T07:45:44Z",
+      "createdAt": "2026-04-15T06:49:46Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 52,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.22] Mermaid \u2192 Plotly watchdog: convert any mermaid blocks in agent replies to inline charts",
+      "updatedAt": "2026-04-18T08:29:36Z",
+      "url": "https://github.com/KKallas/Imp/issues/52",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nTwo changes:\n\n1. **Restructure tools into self-contained folders** \u2014 same pattern as\n   \\`renderers/\\`. Each tool gets its own directory with a README,\n   the script, and any supporting files. This replaces the flat\n   \\`99-tools/\\` and \\`pipeline/\\` layouts.\n2. **Build a heuristics tool** that generates best estimates for dates\n   and durations of project parts, calibrated from the project's own\n   closed-issue history.\n\n## Tool folder structure\n\nMirror the \\`renderers/<type>/\\` pattern: each tool is a self-contained\nfolder under \\`tools/\\`. The folder name is the tool's identity.\n\n\\`\\`\\`\ntools/\n\u251c\u2500\u2500 __init__.py              # tool discovery (scan subdirs)\n\u2502\n\u251c\u2500\u2500 heuristics/              # duration estimation & date inference\n\u2502   \u251c\u2500\u2500 README.md            # what it does, inputs, outputs, examples\n\u2502   \u251c\u2500\u2500 calibrate.py         # S/M/L duration calibration from closed issues\n\u2502   \u251c\u2500\u2500 infer.py             # per-issue date/duration inference\n\u2502   \u2514\u2500\u2500 tests/\n\u2502       \u2514\u2500\u2500 test_calibrate.py\n\u2502\n\u251c\u2500\u2500 sync_issues/             # GitHub issue sync\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u251c\u2500\u2500 sync.py              # migrated from pipeline/sync_issues.py\n\u2502   \u2514\u2500\u2500 ...\n\u2502\n\u251c\u2500\u2500 render_chart/            # chart rendering (calls renderers/)\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u251c\u2500\u2500 render.py            # migrated from pipeline/render_chart.py\n\u2502   \u2514\u2500\u2500 ...\n\u2502\n\u251c\u2500\u2500 moderate_issues/         # issue moderation\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u251c\u2500\u2500 moderate.py          # migrated from 99-tools/moderate_issues.py\n\u2502   \u2514\u2500\u2500 moderate_issues.md   # prompt/instructions\n\u2502\n\u251c\u2500\u2500 fix_prs/                 # PR fixing\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u251c\u2500\u2500 fix.py               # migrated from 99-tools/fix_prs.py\n\u2502   \u251c\u2500\u2500 fix_prs_analysis.md\n\u2502   \u2514\u2500\u2500 fix_prs_fix.md\n\u2502\n\u251c\u2500\u2500 solve_issues/            # issue solving\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u251c\u2500\u2500 solve.py             # migrated from 99-tools/solve_issues.py\n\u2502   \u2514\u2500\u2500 solve_issues.md\n\u2502\n\u251c\u2500\u2500 estimate_dates/          # date estimation\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u2514\u2500\u2500 estimate.py          # migrated from pipeline/estimate_dates.py\n\u2502\n\u251c\u2500\u2500 scenarios/               # what-if scenario engine\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u2514\u2500\u2500 scenarios.py         # migrated from pipeline/scenarios.py\n\u2502\n\u251c\u2500\u2500 project_bootstrap/       # project setup & field provisioning\n\u2502   \u251c\u2500\u2500 README.md\n\u2502   \u2514\u2500\u2500 bootstrap.py         # migrated from pipeline/project_bootstrap.py\n\u2502\n\u2514\u2500\u2500 mermaid_to_plotly/       # mermaid \u2192 plotly conversion\n    \u251c\u2500\u2500 README.md\n    \u2514\u2500\u2500 convert.py           # migrated from pipeline/mermaid_to_plotly.py\n\\`\\`\\`\n\nEach README follows a standard template:\n\\`\\`\\`markdown\n# Tool Name\n\nOne-line description.\n\n## Inputs\n- What data/files it reads\n\n## Outputs\n- What it produces\n\n## Usage\n\\\\\\`\\\\\\`\\\\\\`bash\npython -m tools.heuristics.calibrate\n\\\\\\`\\\\\\`\\\\\\`\n\n## Foreman integration\nHow Foreman calls this tool (MCP tool name, args).\n\\`\\`\\`\n\n## Heuristics tool \u2014 duration calibration\n\nReplace the per-label duration hardcodes in the current\n\\`pipeline/heuristics.py\\` with **project-calibrated** S/M/L buckets\nderived from the project's own closed-issue history.\n\n### Algorithm\n\n1. \\`tools/heuristics/calibrate.py\\` exposes\n   \\`calibrate(closed_issues, defaults=(1, 2, 3)) -> dict[str, int]\\`\n2. For each closed issue, compute \\`delta_days = closedAt - createdAt\\`\n3. Bucket by **complexity signal**:\n   - \\`large\\`: > 5 acceptance-criteria checkboxes or > 1500 chars body\n   - \\`medium\\`: 2\u20135 ACs or 500\u20131500 chars\n   - \\`small\\`: otherwise\n4. Per bucket, take the **median** delta_days (robust to outliers)\n5. Empty bucket \u2192 fall back to default\n6. Cache to \\`.imp/calibration.json\\` with \\`calibrated_at\\` timestamp;\n   recompute when stale (>24h) or closed-issue count changed\n\n### Inference\n\n\\`tools/heuristics/infer.py\\` replaces the current\n\\`heuristics.infer_duration\\`:\n\n\\`\\`\\`python\ndef infer_duration(issue, calibration):\n    raw = field_value(issue, \"duration_days\")\n    if raw and raw > 0:\n        return (int(raw), \"github\", \"high\")\n\n    bucket = complexity_bucket(issue)  # small | medium | large\n    return (calibration[bucket], \"heuristic\", \"medium\")\n\\`\\`\\`\n\n### Foreman integration\n\nMCP tool \\`get_duration_estimates()\\` returns the current calibration\ndict + when it was computed + sample sizes per bucket. Foreman calls\nthis when asked \"how long should this take?\" without running the full\npipeline.\n\n## Migration plan\n\nThe tool folder restructure is a **rename + reorganize**, not a\nrewrite. Existing code moves into its folder with minimal changes.\nImport paths update in \\`server/foreman_agent.py\\` and \\`main.py\\`.\n\nPhase 1: Create \\`tools/heuristics/\\` with the new calibration code\nPhase 2: Migrate remaining tools from \\`99-tools/\\` and \\`pipeline/\\`\n         into \\`tools/<name>/\\` folders (can be a follow-up PR)\n\n## References\n\n- #60 \u2014 P4.24 renderers (same folder-per-plugin pattern)\n- #13 \u2014 original heuristics (P4.13)\n- #14 \u2014 render_chart (consumes calibrated durations)\n- #11 \u2014 Foreman (gets the MCP tool)\n\n## Acceptance criteria\n\n- [ ] \\`tools/heuristics/calibrate.py\\` exposes \\`calibrate()\\` with\n      defaults + complexity-bucket logic\n- [ ] Median used per bucket (not mean)\n- [ ] Result cached to \\`.imp/calibration.json\\`; recomputed when stale\n- [ ] \\`tools/heuristics/infer.py\\` uses calibration dict instead of\n      static label table\n- [ ] \\`complexity_bucket(issue)\\` shared between calibrator and inferrer\n- [ ] Foreman MCP tool \\`get_duration_estimates()\\` returns\n      \\`{small, medium, large, calibrated_at, sample_sizes}\\`\n- [ ] Each tool folder has a README with standard template\n- [ ] Tests for calibrate: empty input \u2192 defaults, mixed issues \u2192 medians,\n      cache hit/miss, heuristics integration\n\n## Out of scope\n\n- Per-area-label calibration (later if S/M/L proves too coarse)\n- Migrating ALL tools in this PR (heuristics first, others follow)\n- Persistent learning across installs (needs v0.2 central server)",
+      "closedAt": "2026-04-18T12:23:47Z",
+      "createdAt": "2026-04-15T06:49:00Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 51,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.21] heuristics \u2014 calibrate small/medium/large durations from closed issues",
+      "updatedAt": "2026-04-18T12:23:47Z",
+      "url": "https://github.com/KKallas/Imp/issues/51",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nToday the classifier in `server/intercept.py` refuses any command it\ndoesn't pre-recognise (anything other than `gh`, named pipeline\nscripts, and a tiny \"demo-safe\" allowlist of `echo`/`ls`/`cat`/etc.).\nThat means Foreman can't run `python3 -c \"<code>\"` or `bash -c\n\"<cmd>\"` even for read-only data wrangling \u2014 the classifier is\nacting as a security boundary, but per v0.1.md's two-layer design\nthe **Guard Agent** is the security boundary, not the classifier.\n\nThis issue:\n\n1. Reclassifies `python3 -c \"<code>\"` and `bash -c \"<cmd>\"` as\n   `\"write\"` in `intercept.classify_command` so they go through Guard\n   checkpoint B instead of being refused outright.\n2. Adds `docs/guard_code_review.md` \u2014 a human-editable Markdown\n   checklist Guard loads at startup and applies when the proposed\n   action is arbitrary code (not a recognised `gh` / pipeline\n   invocation).\n3. Updates `server/guard.py`'s checkpoint-B system prompt to embed\n   the checklist and require Guard to cite the specific item that\n   tripped on a reject.\n\nNet effect: Foreman regains the ability to write inline data-wrangling\ncode; Guard is the actual review boundary; admins can edit the\nchecklist without touching Python.\n\n**The checklist file** (`docs/guard_code_review.md` \u2014 new)\n\nSections:\n\n- **Hard reject** (any one \u2192 reject, cite the rule):\n  - Credential paths: `~/.ssh/`, `~/.aws/`, `.env`, env vars matching\n    `*_TOKEN` / `*_KEY` / `*_PASSWORD`\n  - Network egress: urllib / requests / socket / http.client / `curl`\n    / `wget` to anything\n  - Re-entrant shell: `subprocess` with `shell=True`, `os.system`,\n    `os.popen`, `os.exec*`\n  - Code generation: `exec`, `eval`, `compile`, `__import__`,\n    `getattr(__builtins__, \u2026)`, base64-decoded code\n  - Destructive ops outside `.imp/`: `shutil.rmtree`, `os.unlink`,\n    `> /etc/...`, `rm -rf` on anything not under `.imp/`\n  - System config / private files: `~/.gitconfig`, `~/.ssh/id_*`,\n    browser profiles, OS keychains\n\n- **Scope check**:\n  - Does the code's apparent purpose match the user's intent for\n    this turn?\n  - Does it touch issues / PRs / files the admin didn't mention?\n\n- **Obfuscation flags** (raise the rejection bar):\n  - Hex / long base64 string literals\n  - `chr()` / `ord()` chains, getattr-by-name on builtins\n  - String concatenation that builds command names\n\n- **Commonly fine**:\n  - Reading `.imp/*.json`\n  - Writing to `.imp/output/*` or `.imp/sandbox/*`\n  - Standard library `json` / `re` / `datetime` / `pathlib` /\n    `collections` usage that stays in-scope\n\nThe file is the source of truth \u2014 Guard reads it at module import,\nnot on every call, so editing it requires a process restart.\n\n**References**\n\n- KKallas/Imp#7 \u2014 Guard Agent\n- KKallas/Imp#11 \u2014 Foreman, which keeps reaching for inline code\n- v0.1.md \u00a7The Agent's Role / \u00a7Action Interception\n- `server/intercept.py` \u2014 classifier\n- `server/guard.py` \u2014 checkpoint-B system prompt\n\n**Acceptance criteria**\n\n- [ ] `intercept.classify_command` recognises `python3 -c <code>` and\n  `bash -c <cmd>` as `\"write\"` (so Guard fires)\n- [ ] `docs/guard_code_review.md` exists with the four sections above\n- [ ] `server/guard.py` loads `docs/guard_code_review.md` at module\n  import and embeds it inside the checkpoint-B system prompt for\n  arbitrary-code reviews\n- [ ] When Guard rejects an arbitrary-code action, the reason cites\n  the specific checklist rule (e.g., \"rejected: hard-reject \u2014\n  references `~/.ssh/`\")\n- [ ] Existing `gh` / named-script invocations skip the code-review\n  section of the prompt (no extra tokens for actions Guard already\n  handles cleanly)\n- [ ] Tests:\n  - intercept: `python3 -c \"...\"` and `bash -c \"...\"` classify as\n    write; arbitrary other commands still classify as unknown\n  - guard: system prompt contains the checklist content after import\n  - guard: rejects `subprocess.run([\"curl\",\"evil.com\"])` citing the\n    network-egress rule\n  - guard: approves `json.loads(open(\".imp/issues.json\").read())`\n    with no rule cited\n  - all using the existing fake-backend pattern from `test_guard.py`\n\n**Out of scope**\n\n- Real OS-level sandboxing (chroot / sandbox-exec / bwrap) \u2014 Guard +\n  checklist is the security model\n- AST static analysis as a pre-Guard filter \u2014 could come later if\n  Guard token spend on code review becomes painful\n- Allowing arbitrary `python3 <script.py>` paths \u2014 only the inline\n  `-c` flag gets gated; running unknown script files is a separate\n  review surface\n- Expanding the read-only whitelist (head/tail/grep/find/etc.) \u2014 that's\n  orthogonal work; could open separately if useful",
+      "closedAt": "2026-04-15T06:16:02Z",
+      "createdAt": "2026-04-15T05:18:29Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 46,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P2.10] Guard reviews arbitrary code via a Markdown checklist; allow python3 -c / bash -c",
+      "updatedAt": "2026-04-18T08:29:19Z",
+      "url": "https://github.com/KKallas/Imp/issues/46",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nMake Foreman remember prior turns within a chat session AND let the\nadmin manage chats (start fresh, resume old ones, see them in a list).\nToday every `dispatch()` call spins up a brand-new `ClaudeSDKClient`,\nso Foreman has zero memory of the previous turn \u2014 the admin can't say\n\"now do that for issue 43\" because Foreman has forgotten what \"that\"\nwas.\n\nFour loosely-coupled pieces:\n\n**1. In-memory turn history**\n\nMaintain a list of (user_text, assistant_reply) tuples per Chainlit\nsession. Each new `dispatch()` call replays them into the\n`ClaudeSDKClient` before the new user_text. Configure a max-history\ncap (turn count + char/token budget) so context can't grow without\nbound \u2014 oldest turns drop off first.\n\n**2. Chainlit UI controls**\n\n- **`/new` slash-style command** in chat \u2192 archives the current chat,\n  clears in-memory history, starts a fresh one. Status message\n  confirms the rotation.\n- **\"New chat\" `cl.Action` button** pinned to the chat (similar to\n  the existing budget-bar buttons) \u2014 same effect as `/new`.\n- **\"Recent chats\" panel** in the gear-icon settings (or a dedicated\n  `cl.Action` that opens an `cl.AskActionMessage`): shows up to 20\n  saved chats by title + last_active_at; picking one loads its\n  history into the next `dispatch`.\n- **\"Rename this chat\" action button** so the admin can override the\n  agent-generated title.\n- **Current chat title** rendered above the input or in a small\n  status line so the admin always knows which chat they're in.\n\n**3. Agent-titled chats**\n\nThe agent picks a meaningful title for each chat instead of just\ntruncating the first user message. After the first turn (or every N\nturns if the topic shifts), make a small LLM call:\n\n> \"Here's the conversation so far: ... Suggest a 3-6 word chat\n> title that captures what this conversation is about. Output\n> only the title, no quotes, no prose.\"\n\nCache the title; only re-title when the admin explicitly asks (\"retitle\nthis chat\") or after a major topic-shift heuristic. Burns a few hundred\ntokens per chat \u2014 counted against the token budget like any other LLM\ncall. The admin's manual rename always wins over the agent's.\n\n**4. Disk persistence + resume**\n\nAuto-save each chat to `.imp/chats/<chat_id>.json` after every turn\n(debounced if rapid). Files are JSON so they're git-friendly,\ninspectable, and survive without a DB.\n\n## Folder structure\n\n```\n.imp/chats/\n  \u251c\u2500\u2500 2026-04-15T07-43-00_chat-abc123.json\n  \u251c\u2500\u2500 2026-04-15T08-12-30_chat-def456.json\n  \u2514\u2500\u2500 ...\n```\n\nFilename = `<created_at_ISO>_<chat_id>.json` so directory listing\nsorts chronologically. Chat ID is the source of truth (used in the\nJSON body); filename is a convenience.\n\n## File shape (per chat)\n\n```json\n{\n  \"id\": \"chat-abc123\",\n  \"title\": \"Plan Phase 5 wiring\",\n  \"title_source\": \"agent\",\n  \"created_at\": \"2026-04-15T07:43:00+00:00\",\n  \"last_active_at\": \"2026-04-15T08:12:30+00:00\",\n  \"repo\": \"KKallas/Imp\",\n  \"turns\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"moderate issue 42\",\n      \"timestamp\": \"2026-04-15T07:43:05+00:00\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"I moderated #42 and added the llm-ready label.\",\n      \"tool_calls\": [\n        {\"name\": \"run_moderate_issues\", \"input\": {\"issue\": 42}}\n      ],\n      \"timestamp\": \"2026-04-15T07:43:25+00:00\"\n    }\n  ]\n}\n```\n\n`title_source: \"agent\" | \"user\" | \"fallback\"` so the UI knows whether\nthe title is \"real\" or just a placeholder, and so a manual rename\nisn't accidentally clobbered by the next agent re-titling.\n\n**References**\n\n- KKallas/Imp#11 \u2014 Foreman dispatch loop (currently spins a fresh\n  `ClaudeSDKClient` per turn)\n- `server/foreman_agent.py` \u2014 entry point for in-memory history\n- `main.py` `on_chat_start` / `on_message` \u2014 UI seams for /new, save,\n  resume, rename, list\n- Chainlit primitives: `cl.Action`, `cl.AskActionMessage`,\n  `cl.ChatSettings` (existing gear-icon panel), `cl.Message.update()`\n\n**Acceptance criteria**\n\n- [ ] Foreman `dispatch()` sees prior turns in the same session and\n  can reference them naturally (\"now solve issue 43\" works after\n  \"moderate issue 42\")\n- [ ] Max-history cap (turn count + char/token budget) prevents\n  runaway context growth; oldest turns drop off\n- [ ] `/new` chat command + \"New chat\" action button both clear\n  in-memory history and archive the current chat to disk\n- [ ] Chats persist to `.imp/chats/<id>.json` automatically after\n  every turn (debounced if rapid)\n- [ ] Agent-generated titles are stored with `title_source: \"agent\"`;\n  manual renames flip it to `\"user\"` and aren't overwritten on\n  subsequent re-titlings\n- [ ] \"Recent chats\" UI lists the last ~20 chats by title +\n  last_active_at and loads the picked one into the next `dispatch`\n- [ ] Current chat title is visible somewhere in the UI (inline\n  status, settings panel, or message header)\n- [ ] Tests: history serialization round-trip, truncation past the\n  cap, `/new` clears + archives, resume restores, agent-title\n  generation, manual rename precedence\n\n**Out of scope**\n\n- Full-text search across saved chats\n- Cross-repo chat browsing / chat-as-templates\n- Persistent `ClaudeSDKClient` reuse across `dispatch` calls (simplest\n  impl rebuilds the client each turn but feeds in history; persistent\n  clients can be a follow-up if perf matters)\n- Database-backed persistence (folder JSON is enough for one-admin Imp)\n- Auto-summarization of very long chats into condensed context (could\n  be a future polish if token-cap pressure becomes real)",
+      "closedAt": "2026-04-17T06:59:22Z",
+      "createdAt": "2026-04-15T05:08:25Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 45,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.20] Chat history \u2014 multi-turn memory, UI controls, agent-titled chats, save/resume",
+      "updatedAt": "2026-04-18T08:29:11Z",
+      "url": "https://github.com/KKallas/Imp/issues/45",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-17",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nAfter the dispatcher picks `execute` and runs a command via\n`intercept.execute_command`, make one additional LLM call that sees the\noriginal question + command output + exit code and synthesizes a plain-\nprose answer. Closes the \"run command, dump output, stop\" gap without\noverhauling the dispatcher's protocol.\n\n**Problem (user-observed in testing P3.9)**\n\n> how many issues are currently open?\n> Running: gh issue list --state open\n> [... 13 issues listed ...]\n> Exit code: 0\n\nThe dispatcher correctly chose to run `gh issue list`, but never closed\nthe loop \u2014 the LLM never sees the output, so it can't count or\nsummarize. The user gets raw data, not an answer.\n\n**Design**\n\nStrictly local to `server/dispatcher.py`:\n- Add `FOLLOWUP_SYSTEM_PROMPT` instructing the LLM to interpret command\n  output in plain prose (no JSON).\n- After the `execute` branch runs and the output summary is posted,\n  make one more `backend(FOLLOWUP_SYSTEM_PROMPT, ...)` call with the\n  original question + argv + output (capped to ~6k chars) + rc.\n- `say()` the result as a Foreman-authored message.\n- Skip when the action was rejected (no output to interpret) or when\n  explicit-mode was used (user knows what they typed).\n- Token usage from the follow-up feeds `budgets.add_tokens` like any\n  other backend call.\n\n**Why not full SDK tool use**\n\nThat's a bigger rework tracked separately (multi-step chaining, tool\nregistry, SDK `ClaudeSDKClient`). This issue is the minimum unblock so\nnatural-language questions return actual answers today.\n\n**References**\n- `server/dispatcher.py` \u2014 target module\n- KKallas/Imp#33 \u2014 original P2.9 dispatcher\n\n**Acceptance criteria**\n\n- [ ] `dispatch()` execute branch calls a `_synthesize_answer` helper\n  after the command completes (unless rejected or explicit-mode).\n- [ ] Helper builds a follow-up prompt with the original question, the\n  argv, the output (capped to ~6k chars), and exit code.\n- [ ] Follow-up response is posted via `say()` as a plain message, not\n  JSON.\n- [ ] Follow-up tokens are counted into `budgets.add_tokens`.\n- [ ] Tests updated: `test_dispatch_execute_branch` and\n  `test_dispatch_clarify_then_execute` provide a second `FakeBackend`\n  response (the synthesis) and assert on its appearance.\n- [ ] Explicit-mode test stays silent \u2014 confirms synthesis doesn't\n  fire there.\n\n**Out of scope**\n- Multi-command chaining (ask \u2192 cmd1 \u2192 cmd2 \u2192 answer) \u2014 needs native\n  SDK tool use.\n- Replacing the JSON-verdict protocol.",
+      "closedAt": "2026-04-14T19:58:38Z",
+      "createdAt": "2026-04-14T19:27:24Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 36,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P2.9b] dispatcher: follow-up LLM turn to answer questions from command output",
+      "updatedAt": "2026-04-18T08:29:00Z",
+      "url": "https://github.com/KKallas/Imp/issues/36",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nBridge between inbound chat messages and the existing intercept.py\npipeline. A small Claude agent (`server/dispatcher.py`) that:\n\n1. Reads the user message (already Guard-A-approved via checkpoint A in\n   main.py's on_message).\n2. Decides whether the ask is:\n   - clear enough to execute \u2192 proposes the concrete argv to\n     `intercept.execute_command`\n   - ambiguous \u2192 asks one focused clarifying question via\n     `cl.AskUserMessage`, then loops\n   - a pure question / informational \u2192 answers without a tool call\n3. Respects an \"explicit mode\": if the user writes a concrete command\n   (e.g. `run: gh issue view 42`, `moderate issue 7`), the agent skips\n   clarification and dispatches directly \u2014 the prompt understands the\n   user's directness and doesn't second-guess.\n\nThis is the piece that turns the keyword-matcher in `main.py.on_message`\ninto a real LLM response. Foreman (KKallas/Imp#11) still lands later\nwith the richer multi-tool planning loop \u2014 **P2.9 is the minimum LLM\nthat gets tool dispatch working end-to-end**, so the user sees real\nanswers instead of stubs.\n\n**References**\n- `v0.1.md` \u2014 Agent roles / Foreman\n- `server/intercept.py` \u2014 already owns guard + budget + exec\n- `server/guard.py` \u2014 claude-agent-sdk integration pattern for a\n  tools-free agent (mirror it here)\n- KKallas/Imp#11 \u2014 full Foreman (supersedes this in scope, not timing)\n\n**Acceptance criteria**\n- [ ] `server/dispatcher.py` exposes `dispatch(user_text, *, step=None)`\n  that handles the full intent \u2192 (clarify | execute | answer) loop.\n- [ ] When a tool is chosen, invokes `intercept.execute_command(argv, ...)` \u2014\n  the guard + budget path is never bypassed.\n- [ ] Clarifying questions use `cl.AskUserMessage` and block until\n  answered (or timeout \u2192 polite abort).\n- [ ] Explicit-mode detection: messages starting with `run:` / `run ` OR\n  exact-keyword dispatch (`moderate issue 42` etc.) skip clarification.\n- [ ] Pure-answer branch (e.g. \"what's the budget?\") reads state via\n  `budgets.get_budgets()` without touching intercept.\n- [ ] Claude API token usage is fed into `budgets.add_tokens` via the\n  SDK usage callback, so the token counter stays honest.\n- [ ] Tests: at least one unit test per branch (clarify / execute /\n  answer) with a fake Claude backend, following `tests/test_guard.py`.\n- [ ] `main.py.on_message` calls `dispatcher.dispatch` for non-demo /\n  non-log messages; `run:` and `log` hooks keep working unchanged.",
+      "closedAt": "2026-04-14T11:43:06Z",
+      "createdAt": "2026-04-14T11:12:01Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 33,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P2.9] server/dispatcher.py \u2014 LLM-driven chat \u2192 tool routing + clarifications",
+      "updatedAt": "2026-04-18T08:28:52Z",
+      "url": "https://github.com/KKallas/Imp/issues/33",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe Chainlit app. Replaces the pre-Chainlit plan's server/app.py + server/auth.py + the ui/* tree. Everything user-facing lives in this one file (and the handlers it imports from server/).\n\nThe three things this issue produces:\n\n1. **Password auth**: `@cl.password_auth_callback` reads the argon2 hash from `.imp/config.json`, calls `argon2-cffi` to verify, returns `cl.User(identifier=\\\"admin\\\")` on success, `None` on failure.\n2. **Dispatch on chat start**: `@cl.on_chat_start` reads `.imp/config.json`. If `setup_complete` is false/missing, hand off to the Setup Agent handler (stub for now \u2014 real agent lands in KKallas/Imp#9). Otherwise hand off to Foreman (stub for now \u2014 real agent lands in KKallas/Imp#11).\n3. **Stub on_message**: `@cl.on_message` echoes the input as a `cl.Message(author=\\\"Foreman\\\", content=f\\\"(stub) You said: {msg.content}\\\")` so the chat round-trip is testable end to end.\n\nThis is deliberately minimal. The goal is: after this issue lands, you can `python imp.py`, log in with the password you configured, and see an echo. No agents yet, no tools, no interception \u2014 those come in phases 2-6.\n\n**References**\n- v0.1.md Build Order Phase 1 step 2\n- v0.1.md Architecture (Chainlit handlers diagram)\n- v0.1.md Authentication (@cl.password_auth_callback example)\n- v0.1.md The Agent's Role (for the future handlers this file dispatches to)\n\n**Files produced**\n- `main.py` \u2014 the Chainlit app\n- Possibly `.chainlit/config.toml` customizations (project name \\\"Imp\\\", theme) \u2014 or leave auto-generated defaults for now and customize later in KKallas/Imp#25 (docs/polish phase)\n\n**Acceptance criteria**\n- [ ] `python imp.py` boots, chainlit prints \\\"Your app is available at http://localhost:8420\\\", browser login works with the password from `.imp/config.json`\n- [ ] Wrong password shows \\\"Invalid credentials\\\" and never reaches on_chat_start\n- [ ] Missing `.imp/config.json` does NOT crash \u2014 in that state, on_chat_start routes to a stub Setup Agent handler that at minimum says \\\"I would walk you through setup here\\\" so the flow is testable\n- [ ] Sending a chat message produces an echo reply from author \\\"Foreman\\\" (or \\\"Setup Agent\\\" if in setup mode)\n- [ ] No server/app.py or server/auth.py is created \u2014 the whole FastAPI+WebSocket+JS apparatus is explicitly NOT implemented\n- [ ] No HTML / CSS / JavaScript is written in this PR (per the updated v0.1.md \\\"What NOT To Do\\\")\n- [ ] The spike/chainlit-frontend branch's main.py is the reference \u2014 this issue's PR can either promote that file directly or rewrite it, but the resulting UX must match what was demonstrated in the spike",
+      "closedAt": "2026-04-11T19:28:01Z",
+      "createdAt": "2026-04-11T16:05:51Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 27,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P1.2] main.py \u2014 Chainlit app skeleton (auth, setup/foreman dispatch, on_message stub)",
+      "updatedAt": "2026-04-18T08:28:43Z",
+      "url": "https://github.com/KKallas/Imp/issues/27",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe user-facing setup guide. Covers: clone + run, browser setup walkthrough, the two deployment modes (VPS always-on vs. laptop on-demand), the recommended Caddyfile for HTTPS termination on a VPS, password recovery procedure (\"SSH in and delete the hash from .imp/config.json\"), and a short FAQ.\n\n**References**\n- v0.1.md What This Project Does \u2192 Deployment is flexible\n- v0.1.md Authentication\n\n**Acceptance criteria**\n- [ ] Step-by-step setup that a non-developer can follow\n- [ ] Caddyfile example for both Caddy and Cloudflare Tunnel\n- [ ] Password recovery section\n- [ ] Explicit guidance on choosing VPS vs. laptop mode",
+      "closedAt": null,
+      "createdAt": "2026-04-11T12:31:25Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 25,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "[P7.25] docs/README.md \u2014 non-developer setup guide",
+      "updatedAt": "2026-04-18T08:28:34Z",
+      "url": "https://github.com/KKallas/Imp/issues/25",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-23",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nBuild a live dashboard as a renderer plugin served by the render server\n(P4.24). Instead of fighting Chainlit's limited sidebar widgets, the\ndashboard is a self-contained HTML page at\n`/render/dashboard?mode=viewer` \u2014 linked from the chat, always live.\n\nThis replaces the original plan of using `cl.ChatSettings`, `cl.TaskList`,\nand `cl.Switch` for runtime control. The render server already runs on\nport 8421 with no auth, so the dashboard is one click away.\n\n## Dashboard sections\n\n### Budget counters\n- Tokens: used / limit (progress bar)\n- Edits: used / limit (progress bar)\n- Tasks: used / limit (progress bar)\n- Source: `budgets.get_budgets().to_dict()`\n\n### Loop state\n- Status: running / paused / off\n- Scope: all issues or scoped to specific numbers\n- Interval: minutes between ticks\n- Source: `.imp/config.json` \u2192 `loop.paused`, `loop.scope`\n\n### Running tasks\n- Currently active pipeline subprocesses\n- PID, command, runtime duration\n- Source: `intercept.get_running_tasks_snapshot()`\n\n### Recent actions\n- Last 10-20 proposed/executed actions\n- Action ID, command, verdict, return code, timing\n- Source: `intercept.get_recent_actions(n=20)`\n\n### System controls (interactive HTML)\n- Pause/resume toggle (calls render server endpoint)\n- Abort running task button\n- Source: `intercept.set_accepting_new_actions()`, `intercept.abort_task()`\n\n## Implementation\n\n### Renderer plugin\n```\nrenderers/dashboard/\n\u251c\u2500\u2500 renderer.py       # reads budgets, intercept, config.json\n\u2514\u2500\u2500 template.html.j2  # live HTML with auto-refresh (every 5s)\n```\n\n`renderer.py` collects all state into a single context dict:\n```python\nclass DashboardRenderer(BaseRenderer):\n    name = \"dashboard\"\n    block_type = None\n\n    def parse(self, raw):\n        from server import budgets, intercept\n        return {\n            \"budgets\": budgets.get_budgets().to_dict(),\n            \"running\": intercept.get_running_tasks_snapshot(),\n            \"recent\": intercept.get_recent_actions(n=20),\n            \"accepting\": intercept.accepting_new_actions(),\n            \"loop\": _load_loop_config(),\n        }\n```\n\n### URL contract\n```\nGET /render/dashboard?mode=viewer  \u2192 live HTML dashboard (auto-refreshes)\nGET /render/dashboard              \u2192 PNG screenshot of dashboard\n```\n\n### Chat integration\n- \"status\" command in chat posts a one-shot summary + link:\n  `**Dashboard** \u2014 [Open live dashboard](http://127.0.0.1:8421/render/dashboard?mode=viewer)`\n- Foreman can link to the dashboard when discussing budgets or loop state\n- Screenshot (PNG mode) can be embedded inline for quick glance\n\n### Control endpoints (on render server)\nFor the interactive controls (pause/resume, abort), add POST endpoints\nto the render server:\n```\nPOST /api/pause          \u2192 toggle accepting_new_actions\nPOST /api/abort/{id}     \u2192 abort a running task\n```\nThe dashboard template calls these via fetch() from the interactive HTML.\n\n## API surface (already exists)\n\n| Function | Returns | Purpose |\n|----------|---------|---------|\n| `budgets.get_budgets()` | `BudgetState` | Token/edit/task counters |\n| `intercept.get_running_tasks_snapshot()` | `list[dict]` | Active subprocesses |\n| `intercept.get_recent_actions(n)` | `list[dict]` | Action history |\n| `intercept.accepting_new_actions()` | `bool` | Pause state |\n| `intercept.abort_task(action_id)` | `(bool, str)` | Kill a task |\n\n## References\n\n- #60 \u2014 P4.24 renderer plugin system (foundation)\n- v0.1.md \u2014 Runtime control and observability\n- Depends on: #6 (running_tasks map), #8 (budgets.py)\n\n## Files touched\n\n- `renderers/dashboard/renderer.py` \u2014 **new** \u2014 dashboard data collector\n- `renderers/dashboard/template.html.j2` \u2014 **new** \u2014 live HTML dashboard\n- `server/render_route.py` \u2014 add POST `/api/pause` and `/api/abort/{id}`\n- `main.py` \u2014 \"status\" command links to dashboard\n- `server/foreman_agent.py` \u2014 Foreman can reference dashboard URL\n\n## Acceptance criteria\n\n- [ ] `/render/dashboard?mode=viewer` shows live budgets, loop state, running tasks, recent actions\n- [ ] Dashboard auto-refreshes every 5 seconds\n- [ ] Pause/resume toggle works from the dashboard\n- [ ] Abort button kills a running task\n- [ ] \"status\" chat command posts summary + dashboard link\n- [ ] PNG mode (`/render/dashboard`) returns a screenshot for inline chat embedding\n- [ ] No Chainlit sidebar widgets needed \u2014 all control via the dashboard page\n\n## Out of scope (defer)\n\n- Custom CSS themes for the dashboard\n- Historical budget graphs (just current counters for now)\n- WebSocket push (polling at 5s is fine)",
+      "closedAt": null,
+      "createdAt": "2026-04-11T12:31:24Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 24,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "[P6.16] Chainlit control surfaces \u2014 sidebar, TaskList, abort button",
+      "updatedAt": "2026-04-18T08:28:24Z",
+      "url": "https://github.com/KKallas/Imp/issues/24",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-23",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe autonomous processing loop. Reads `loop` config from .imp/config.json. On each tick, builds a synthetic user intent (\"autonomously process ready issues, scoped to {scope}\"), runs Foreman against it through the same Guard Agent. Respects pause, scope, and max_tasks_per_tick. Hot-reloads config so chat-driven loop_pause / loop_scope / configure_loop take effect immediately.\n\n**References**\n- v0.1.md Background Processing Loop\n\n**Acceptance criteria**\n- [ ] Ticks fire on the configured schedule\n- [ ] Pause / resume / scope take effect within one tick of being set\n- [ ] Loop ticks go through the same Guard Agent as interactive sessions\n- [ ] Loop respects task budget and max_tasks_per_tick\n- [ ] Disabled loop never ticks",
+      "closedAt": null,
+      "createdAt": "2026-04-11T12:31:22Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 23,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "[P6.23] server/loop.py \u2014 autonomous loop scheduler",
+      "updatedAt": "2026-04-18T08:28:14Z",
+      "url": "https://github.com/KKallas/Imp/issues/23",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-23",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nRender `{type: \"proposed_action\"}` messages as a card showing the action kind, target, exact command, and rationale. Show the guard's auto-decision (approved / rejected). For rejected actions, allow the admin to override with an Approve button (sends `{type: \"action_decision\", decision: \"approve\"}`). Outcome messages (`action_executed`, `action_rejected`) update the card in place.\n\n**References**\n- v0.1.md WebSocket Message Protocol\n\n**Acceptance criteria**\n- [ ] Each proposed action is one card with action_id as the key\n- [ ] Auto-approved actions render in green; rejected in red\n- [ ] Override Approve button only appears on rejected cards\n- [ ] Cards update in place when outcome messages arrive",
+      "closedAt": "2026-04-11T16:04:27Z",
+      "createdAt": "2026-04-11T12:31:20Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 22,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P5.22] ui/renderers/proposed_action.js \u2014 \"Foreman wants to do X\" panel",
+      "updatedAt": "2026-04-18T08:28:04Z",
+      "url": "https://github.com/KKallas/Imp/issues/22",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nAdd `moderate_issues.py`, `solve_issues.py`, `fix_prs.py`, `run_all.sh` to the worker's tool registry. Each invocation goes through intercept.py as a single proposed action \u2014 the script is the trust unit, not the underlying gh subcommands. The Guard Agent sees \"the worker wants to run solve_issues.py on issue #N because the user asked for that issue to be solved.\"\n\n**References**\n- v0.1.md The Agent's Role \u2192 Code-writing pipeline\n- v0.1.md Architecture (proposed action granularity)\n\n**Acceptance criteria**\n- [ ] Foreman can be asked \"moderate issue 42\" and it proposes the right command\n- [ ] Guard correctly approves on-task invocations and rejects mismatches (e.g. proposed solve when user asked moderate)\n- [ ] Tasks counter increments per invocation\n- [ ] Worker is forbidden from passing extra args the user did not authorize",
+      "closedAt": null,
+      "createdAt": "2026-04-11T12:31:18Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 21,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "[P5.21] foreman_agent.py \u2014 register code-writing pipeline tools",
+      "updatedAt": "2026-04-18T08:27:56Z",
+      "url": "https://github.com/KKallas/Imp/issues/21",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-23",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nReplace 99-tools/_state.py's standalone JSON file with a shim that reads/writes `.imp/state.json` via server/budgets.py. Preserves the existing module API (`record_run`, `check_budget`, `get_tokens_used`, `reset_state`, `print_status`) so 99-tools/run_all.sh and the individual scripts keep working unchanged. Result: a budget set in chat applies to subsequent CLI runs and vice versa.\n\n**References**\n- v0.1.md Budgets\n- v0.1.md File Structure (99-tools/_state.py)\n\n**Acceptance criteria**\n- [ ] All existing functions in 99-tools/_state.py still callable with the same signatures\n- [ ] Both `./99-tools/run_all.sh` and chat tools see the same counter values\n- [ ] No duplicate state file in 99-tools/",
+      "closedAt": null,
+      "createdAt": "2026-04-11T12:31:17Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 20,
+      "state": "OPEN",
+      "stateReason": "",
+      "title": "[P5.20] 99-tools/_state.py \u2014 shim into server/budgets.py",
+      "updatedAt": "2026-04-18T08:27:47Z",
+      "url": "https://github.com/KKallas/Imp/issues/20",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-18",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-23",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThree more Jinja2 templates: kanban (lanes per status), burndown (Chart.js), comparison (A/B overlay used by scenario.py). All consume the same enriched.json schema.\n\n**References**\n- v0.1.md File Structure (templates/)\n\n**Acceptance criteria**\n- [ ] kanban.html.j2: columns for Open / In Progress / Done; cards show issue title and assignee\n- [ ] burndown.html.j2: line chart of remaining work over time\n- [ ] comparison.html.j2: two timelines side-by-side with delta labels",
+      "closedAt": "2026-04-16T05:55:38Z",
+      "createdAt": "2026-04-11T12:30:31Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 19,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.19] templates/{kanban,burndown,comparison}.html.j2 \u2014 remaining chart templates",
+      "updatedAt": "2026-04-18T08:27:38Z",
+      "url": "https://github.com/KKallas/Imp/issues/19",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-16",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nRender `{type: \"selection\", prompt, options}` as a prompt + a row of clickable buttons. Clicking a button sends a `{type: \"user_choice\", choice}` message back to the server.\n\n**References**\n- v0.1.md WebSocket Message Protocol (selection / user_choice)\n\n**Acceptance criteria**\n- [ ] Buttons render and are keyboard-accessible\n- [ ] After a click, the buttons are disabled and the choice is shown as a posted message\n- [ ] Server receives the choice as a user_choice message",
+      "closedAt": "2026-04-11T16:04:25Z",
+      "createdAt": "2026-04-11T12:30:29Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 18,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P4.18] ui/renderers/selection.js \u2014 clickable choice buttons",
+      "updatedAt": "2026-04-18T08:27:29Z",
+      "url": "https://github.com/KKallas/Imp/issues/18",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nRender `{type: \"diff\", content}` messages using diff2html in the chat log.\n\n**References**\n- v0.1.md WebSocket Message Protocol (diff)\n\n**Acceptance criteria**\n- [ ] Unified diff format renders as a side-by-side view\n- [ ] Long diffs scroll inside the chat log without breaking page layout",
+      "closedAt": "2026-04-11T16:04:23Z",
+      "createdAt": "2026-04-11T12:30:28Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 17,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P4.17] ui/renderers/diff.js \u2014 diff rendering with diff2html",
+      "updatedAt": "2026-04-18T08:27:19Z",
+      "url": "https://github.com/KKallas/Imp/issues/17",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\n\nRewrite of the original \"A/B timeline comparison\" scope into something\nthat generalises to any kind of scenario output (not just charts) and\nforces a decision-commit step before the chat continues normal work.\n\nThe problem this solves: *\"I want to try 3 different futures for this\nproject \u2014 start 2 weeks later, add 2 devs, freeze scope after June \u2014\nand pick the one I'm going to commit to.\"* Today there's no way to do\nthat except mentally; the existing `render_chart` always renders one\nview of one dataset.\n\n## Interaction model\n\n```\nYou: let's compare scenarios for the gantt\n\nForeman: Describe your scenarios, one per line (2-5 scenarios):\n\nYou:    as-is\n        start 2 weeks from now\n        4 developers instead of 2\n\nForeman: [thinking spinner]\n         [single LLM call \u2192 hidden .imp/scenarios/<id>/scenarios.py]\n         [runs .py against baseline enriched data]\n         [grid message: subplots for charts + Markdown table for metrics]\n         [ commit s1 ] [ commit s2 ] [ commit s3 ] [ close ]\n\nYou: [clicks commit s2]\n\nForeman: Scenario \"start 2 weeks from now\" is the active scenario.\n         Baseline data unchanged. Say \"apply to project board\" when\n         you're ready to write it to GitHub; otherwise it's just the\n         lens for future gantt renders.\n         [chat unfreezes, normal work resumes]\n```\n\nWhile a scenario session is **open** (no commit / close yet), the chat\nis **frozen** for normal Foreman work \u2014 the user must either commit\nto one scenario or close the session. This forces the decision.\n\n## Grid rendering (any output type, not just charts)\n\nEach scenario produces multiple outputs of mixed types, rendered\nside-by-side as columns:\n\n```\n                \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n                \u2502 s1: as-is    \u2502 s2: +2 weeks \u2502 s3: 4 devs   \u2502\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u253c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524\n\u2502 chart         \u2502 [plotly]     \u2502 [plotly]     \u2502 [plotly]     \u2502\n\u2502 duration      \u2502 35 days      \u2502 49 days      \u2502 22 days      \u2502\n\u2502 blockers      \u2502 none         \u2502 #14, #19     \u2502 none         \u2502\n\u2502 finish date   \u2502 2026-05-20   \u2502 2026-06-03   \u2502 2026-05-07   \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\nImplementation:\n- Charts from all scenarios \u2192 one `plotly.graph_objects.Figure` with\n  horizontal subplots (one column per scenario, shared y-axis where\n  it makes sense). Rendered via `cl.Plotly`.\n- Text / metric / list outputs \u2192 single Markdown table in the same\n  message content, scenarios as columns.\n- One Chainlit message per scenario session, with one Plotly element\n  + Markdown body + action buttons.\n\n## The scenario .py is hidden\n\nUsers edit text descriptions; the .py is generated / regenerated on\n\"Compute.\" This keeps the reproducibility contract (same .py + same\nbaseline data = same result) without exposing implementation detail.\n\nPath: `.imp/scenarios/<session_id>/scenarios.py` \u2014 not shown to the\nadmin, but present on disk so re-opening a session runs the exact\nsame code against the (possibly updated) baseline data.\n\n## API for scenario functions (inside the hidden .py)\n\n```python\n@scenario(\"as-is\")\ndef s1(data, out):\n    out.chart(build_plotly_gantt(data))\n    out.metric(\"duration\", f\"{total_days(data)}d\")\n    out.metric(\"finish date\", final_date(data))\n    out.list(\"blockers\", find_blockers(data))\n\n@scenario(\"start 2 weeks from now\")\ndef s2(data, out):\n    shifted = delay_all(data, days=14)\n    out.chart(build_plotly_gantt(shifted))\n    out.metric(\"duration\", f\"{total_days(shifted)}d\")\n    out.metric(\"finish date\", final_date(shifted))\n    out.list(\"blockers\", find_blockers(shifted))\n\n# ... etc\n```\n\nThe `out` object has explicit methods \u2014 no stdout capture, no magic:\n- `out.chart(plotly_figure)` \u2014 appended to the Plotly subplot grid\n- `out.metric(name, value)` \u2014 row in the Markdown table\n- `out.list(name, items)` \u2014 bullet list in a cell\n- `out.text(name, content)` \u2014 free-form markdown in a cell\n- `out.table(name, rows)` \u2014 nested table inside a cell (bounded)\n\n## Filter primitives library\n\n`pipeline/scenarios.py` (new) exposes:\n- `delay_all(data, days)`, `delay_issue(data, number, days)`\n- `drop_issue(data, number)` \u2014 remove from dataset, cascade\n  dependencies\n- `scale_durations(data, factor, where=None)` \u2014 multiply durations,\n  optional subset filter\n- `shift_start(data, date)` \u2014 set baseline start date\n- `exclude_weekends(data)` \u2014 work only on weekdays\n- `freeze_after(data, date)` \u2014 treat any issue not started by `date`\n  as dropped\n\nAll pure functions: `enriched_data \u2192 modified_enriched_data`. Extend\nas real scenarios demand.\n\n## Single LLM call generates the .py\n\nOne generation pass, not per-scenario. Foreman's LLM sees all N text\ndescriptions at once + the filter-primitive API + the `out` interface,\nand emits the full `scenarios.py` as a single output. Cheaper in\ntokens, lets the LLM define scenarios in relation to each other (e.g.\n\"as-is\" is contextualised by the alternatives).\n\n## Commit semantics (Stage 1 only \u2014 this issue)\n\nCommit records the choice in `.imp/scenarios/<id>/committed.json`:\n```json\n{\n  \"session_id\": \"gantt-comparison-2026-04-15\",\n  \"choice_index\": 1,\n  \"choice_name\": \"start 2 weeks from now\",\n  \"committed_at\": \"2026-04-15T...\",\n  \"baseline_data_hash\": \"sha256:...\"\n}\n```\n\n**Baseline data on disk (`.imp/enriched.json`) is NOT mutated.**\nCommit is internal \u2014 it makes the committed scenario the \"lens\" for\nfuture gantt renders within this Imp install. Subsequent\n`run_render_chart` calls compose:\n  1. Load `.imp/enriched.json`\n  2. Check for an active scenario commit\n  3. If present: apply that scenario's transformation before rendering\n\n**Stage 2 \u2014 \"apply to project board\"** \u2014 is explicitly out of scope\nfor this issue. A separate workflow (\"apply this scenario to GitHub\")\nuses PM-write tools to update issue fields. That's the real-world\ncommitment; this issue only covers exploration.\n\n## Re-opening a session\n\n```\nYou: /scenarios list   OR   \"show me recent scenario sessions\"\n\nForeman: Recent sessions:\n         1. gantt-team-comparison \u2014 3 scenarios, committed: s2 (start 2w)\n         2. release-date-options \u2014 2 scenarios, committed: s1\n         3. q2-scope-cuts \u2014 4 scenarios, NOT committed (closed)\n\nYou: open session 1\n\nForeman: [re-runs .imp/scenarios/<id>/scenarios.py against current\n          baseline data]\n         [grid message with s2 highlighted as current commit]\n         [ switch to s1 ] [ switch to s3 ] [ apply to project ] [ close ]\n```\n\nRe-running uses the saved .py (reproducibility contract). Baseline\ndata may have changed (more synced issues, different durations) \u2014 the\ncharts reflect today's reality under each scenario's lens.\n\nSwitching the commit from s2 \u2192 s3 updates `committed.json`. Future\ngantt renders reflect the new choice.\n\n## Chat freeze / unfreeze\n\n- When a scenario session is OPEN (displayed, awaiting commit), the\n  `@cl.on_message` handler routes input **only** to the scenario\n  session (refine descriptions, trigger recompute) \u2014 regular Foreman\n  dispatch is bypassed.\n- Commit / close unfreezes the chat.\n- Session state lives in `cl.user_session[\"active_scenario_session\"]`.\n\n## References\n\n- KKallas/Imp#13 \u2014 heuristics (produces the `enriched.json` baseline)\n- KKallas/Imp#14 \u2014 render_chart (scenarios reuse the Plotly builders)\n- KKallas/Imp#21 (P4.21) \u2014 duration calibration (scenario defaults\n  benefit from calibrated S/M/L)\n- KKallas/Imp#22 (P4.22) \u2014 mermaid watchdog (orthogonal; this issue\n  produces Plotly natively, no mermaid route)\n- KKallas/Imp#45 (P4.20) \u2014 chat history (future dependency: true\n  per-scenario chat branches will need session-aware history)\n\n## Acceptance criteria\n\n- [ ] `pipeline/scenarios.py` exposes `@scenario` decorator, `Out`\n  collector class (with `chart`, `metric`, `list`, `text`, `table`\n  methods), `run(py_path, baseline_data) -> per_scenario_outputs`\n- [ ] Filter primitives library: `delay_all`, `delay_issue`,\n  `drop_issue`, `scale_durations`, `shift_start`, `exclude_weekends`,\n  `freeze_after` \u2014 all pure functions\n- [ ] Foreman MCP tools:\n  - `start_scenario_session(descriptions: list[str]) -> session_id`\n    \u2014 single-LLM-call .py generation, runs, returns session_id\n  - `commit_scenario(session_id, choice_index) -> {}` \u2014 writes\n    `committed.json`\n  - `switch_scenario(session_id, choice_index) -> {}` \u2014 updates\n    existing commit\n  - `close_scenario(session_id) -> {}` \u2014 closes without commit\n  - `open_scenario_session(session_id) -> session_state` \u2014 loads\n    saved .py, re-runs, returns state\n  - `list_scenario_sessions(limit=10) -> list` \u2014 recent sessions\n- [ ] `.imp/scenarios/<id>/` layout: `scenarios.py`, `descriptions.txt`,\n  `committed.json` (if committed), `result.json` (cached render)\n- [ ] Grid rendering in `main.py`: single Plotly subplot + Markdown\n  table, attached to one `cl.Message` with action buttons\n- [ ] Action callbacks for commit / switch / close wired to the MCP\n  tools\n- [ ] Chat freeze: while session open, input routes to the session\n  (not Foreman dispatch)\n- [ ] Active-scenario composition: `run_render_chart` detects\n  committed scenario and applies its transformation before rendering\n- [ ] Baseline data (`.imp/enriched.json`) NEVER written during any\n  scenario flow (only Stage 2 \u2014 separate issue \u2014 does that)\n- [ ] Tests:\n  - Scenario `.py` generated from 3 descriptions produces 3\n    callable functions decorated with `@scenario`\n  - Each filter primitive transforms a fixture correctly\n  - `Out` collector serialises to the grid-rendering contract\n  - Commit / switch / close round-trip through disk\n  - `committed.json` includes baseline data hash so a later\n    re-open can detect drift\n  - Chat freeze: a message sent while a session is open doesn't\n    reach Foreman dispatch\n\n## Out of scope (explicit)\n\n- **Stage 2 \u2014 apply-to-project-board**: writing the committed\n  scenario's dates/changes back to GitHub as PM-write actions.\n  Separate workflow, separate issue. This issue ends at \"Stage 1\n  commit recorded on disk.\"\n- **Per-scenario chat branches**: once P4.20 chat history lands,\n  each scenario could have its own continuation thread. Today a\n  commit just unfreezes the shared chat.\n- **Slash commands**: natural language only (`\"compare scenarios\"`).\n  If we want universal slash commands later, that's a separate\n  product decision covering all Foreman tools uniformly \u2014 not a\n  per-tool bolt-on here.\n- **Editing the scenario .py directly by hand**: it's hidden by\n  design. Re-generation from edited text is the only path. Advanced\n  users can edit on disk at their own risk but it's not a supported\n  workflow.",
+      "closedAt": "2026-04-15T11:19:05Z",
+      "createdAt": "2026-04-11T12:30:26Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 16,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.16] pipeline/scenarios \u2014 compare N scenarios side-by-side, commit to one",
+      "updatedAt": "2026-04-18T08:27:10Z",
+      "url": "https://github.com/KKallas/Imp/issues/16",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nWhen the server sends a `{type: \"chart\", html, title}` message, mount the HTML inside the chat log in a sandboxed container so script tags load. Should not pollute the main page's CSS.\n\n**References**\n- v0.1.md WebSocket Message Protocol (chart)\n\n**Acceptance criteria**\n- [ ] Charts render inline in the chat\n- [ ] Multiple charts in one session don't conflict (unique IDs)\n- [ ] Title is shown above the chart",
+      "closedAt": "2026-04-11T16:04:21Z",
+      "createdAt": "2026-04-11T12:30:25Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 15,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P4.15] ui/renderers/chart.js \u2014 chart injection into the chat log",
+      "updatedAt": "2026-04-18T08:26:59Z",
+      "url": "https://github.com/KKallas/Imp/issues/15",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nRenders an HTML Gantt chart from `.imp/enriched.json` using a Jinja2 template + Frappe Gantt or Mermaid. Output goes to `.imp/output/gantt.html`. The agent returns the rendered HTML inside a ```html code fence; the frontend renders inline.\n\n**References**\n- v0.1.md The Agent's Role \u2192 Render\n- v0.1.md Build Order step 14\n\n**Acceptance criteria**\n- [ ] CLI: `python pipeline/render_chart.py --template gantt` produces a valid HTML file\n- [ ] Chart shows all issues with start/end dates and dependency arrows\n- [ ] Issues without dates are listed below the chart instead of crashing\n- [ ] templates/gantt.html.j2 is self-contained (no external CSS needed at render time)",
+      "closedAt": "2026-04-15T05:18:27Z",
+      "createdAt": "2026-04-11T12:30:23Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 14,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.14] pipeline/render_chart.py + templates/gantt.html.j2 \u2014 first chart",
+      "updatedAt": "2026-04-18T08:26:48Z",
+      "url": "https://github.com/KKallas/Imp/issues/14",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nReads `.imp/issues.json`, infers missing fields (durations, dependency edges from `depends_on` text + LLM hints, delays vs. baseline), and writes `.imp/enriched.json`. Each inferred field is tagged with `source: heuristic | llm | github` and a `confidence` level.\n\n**References**\n- v0.1.md Issue Schema\n- v0.1.md The Agent's Role \u2192 Analyze\n\n**Acceptance criteria**\n- [ ] depends_on text field is parsed; unparseable values are logged but do NOT abort the sync (per the doc \u2014 fail soft)\n- [ ] Each enriched field carries source + confidence\n- [ ] Detects delayed issues by comparing current end_date to imp:baseline label state\n- [ ] Has unit tests against fixtures in tests/fixtures/",
+      "closedAt": "2026-04-15T04:36:26Z",
+      "createdAt": "2026-04-11T12:30:21Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 13,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.13] pipeline/heuristics.py \u2014 infer durations, dependencies, delays",
+      "updatedAt": "2026-04-18T08:26:39Z",
+      "url": "https://github.com/KKallas/Imp/issues/13",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nPulls all issues + their Projects v2 field values from the configured repo and writes `.imp/issues.json`. Read-only on GitHub. Used as the input for heuristics.py and render_chart.py.\n\n**References**\n- v0.1.md The Agent's Role \u2192 Sync\n- v0.1.md Build Order step 12\n\n**Acceptance criteria**\n- [ ] Output JSON contains: issue number, title, body, labels, milestone, assignees, state, all custom field values\n- [ ] Handles paginated repos (>100 issues)\n- [ ] Records the sync timestamp so heuristics can detect stale data",
+      "closedAt": "2026-04-15T04:00:22Z",
+      "createdAt": "2026-04-11T12:30:19Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 12,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.12] pipeline/sync_issues.py \u2014 pull issues + project field values from GitHub",
+      "updatedAt": "2026-04-18T08:26:30Z",
+      "url": "https://github.com/KKallas/Imp/issues/12",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe Foreman worker agent. Loaded by app.py after setup_complete is true. Wires the Claude Agent SDK with a pre-tool-call hook that funnels every Bash invocation through server/intercept.py. Tool registry covers all categories (read/visibility, PM writes, code-writing pipeline placeholder, chat/control). Code-writing pipeline tools are stubbed and wired in P5.21.\n\n**References**\n- v0.1.md The Agent's Role\n- v0.1.md Action Interception (mechanism 1)\n\n**Acceptance criteria**\n- [ ] Foreman is loaded once setup_complete flips\n- [ ] SDK pre-tool-call hook is registered and routes every Bash call through intercept.py\n- [ ] All read tools work; PM-write tools work end-to-end via the guard\n- [ ] CLAUDE.md content from v0.1.md is loaded as the worker's system prompt",
+      "closedAt": "2026-04-15T03:43:27Z",
+      "createdAt": "2026-04-11T12:30:18Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 11,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P4.11] server/foreman_agent.py \u2014 worker definition + tool registry",
+      "updatedAt": "2026-04-18T08:26:21Z",
+      "url": "https://github.com/KKallas/Imp/issues/11",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-15",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe script the Setup Agent calls to provision a Projects v2 board on the user's account. Reads `templates/fields.json` for the field definitions and creates: duration_days (Number), start_date (Date), end_date (Date), confidence (Single-select), source (Single-select), assignee_verified (Single-select), depends_on (Text). Writes the resulting project number to `.imp/config.json`.\n\n**References**\n- v0.1.md Issue Schema\n- v0.1.md First Run Experience \u2192 Project board bootstrap\n\n**Acceptance criteria**\n- [ ] templates/fields.json contains all 7 fields with correct types\n- [ ] project_bootstrap.py creates the Imp board if missing, idempotent if already present\n- [ ] All 7 custom fields are created on the board\n- [ ] project number is persisted to config",
+      "closedAt": "2026-04-14T21:16:32Z",
+      "createdAt": "2026-04-11T09:07:12Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjOQ",
+          "name": "area:pipeline",
+          "description": "pipeline/ + 99-tools/ scripts",
+          "color": "0052cc"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 10,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P3.10] pipeline/project_bootstrap.py + templates/fields.json",
+      "updatedAt": "2026-04-18T08:26:11Z",
+      "url": "https://github.com/KKallas/Imp/issues/10",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe Setup Agent. Distinct persona from Foreman, narrow toolset: `set_admin_password`, `gh_auth_status/login`, `claude_auth_status/login`, `list_repos`, `set_repo`, `list_projects`, `create_imp_project` (calls into project_bootstrap.py from P3.10), `configure_loop`, `mark_setup_complete`. Loaded by app.py whenever `.imp/config.json` is missing or `setup_complete: false`.\n\n**References**\n- v0.1.md First Run Experience \u2192 The Setup Agent\n- v0.1.md Build Order step 9\n\n**Acceptance criteria**\n- [ ] Visiting / with no config redirects to a chat session driven by the Setup Agent\n- [ ] Each setup tool is implemented and callable\n- [ ] gh_auth_login surfaces the verification URL + code in chat and polls until auth completes\n- [ ] Setup Agent uses the same Guard Agent (writes are gated)\n- [ ] On mark_setup_complete the next visit hands off to Foreman",
+      "closedAt": "2026-04-14T19:13:10Z",
+      "createdAt": "2026-04-11T09:07:11Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 9,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P3.9] server/setup_agent.py \u2014 Setup-mode agent and its tools",
+      "updatedAt": "2026-04-18T08:26:01Z",
+      "url": "https://github.com/KKallas/Imp/issues/9",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThree independent counters backed by `.imp/state.json`. Hooked into intercept.py: every approved write increments edits; every pipeline-script invocation increments tasks; the agent SDK's token usage callback feeds tokens. When any budget hits zero, intercept.py rejects further writes with a clear error.\n\n**References**\n- v0.1.md Budgets\n- v0.1.md .imp/config.json schema\n\n**Acceptance criteria**\n- [ ] `get_budgets()` returns `{tokens: {used, limit}, edits: {...}, tasks: {...}}`\n- [ ] `set_*_budget(N)`, `reset_budgets(which=[...])` work and persist\n- [ ] Existing `99-tools/_state.py` is updated to read/write the same file (shim \u2014 actual rewrite is in P5.20)\n- [ ] Exhausting any budget causes the next write attempt through intercept.py to be rejected",
+      "closedAt": "2026-04-14T10:44:43Z",
+      "createdAt": "2026-04-11T09:07:09Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 8,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P2.8] server/budgets.py \u2014 token + edit + task counters",
+      "updatedAt": "2026-04-18T08:25:52Z",
+      "url": "https://github.com/KKallas/Imp/issues/8",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-14",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe real Guard Agent. Checkpoint A screens inbound user messages (sanitized text) for prompt injection / jailbreak / malicious code. Checkpoint B reviews proposed write actions against the user's stated intent for on-task alignment. Has no tools \u2014 only emits structured verdicts.\n\n**References**\n- v0.1.md Architecture (Layer 1 \u2014 Guard Agent)\n- v0.1.md Action Interception\n\n**Acceptance criteria**\n- [ ] Checkpoint A returns `{verdict, reason}` for arbitrary user text\n- [ ] Checkpoint B receives (user_intent, proposed_action, worker_rationale) and returns the same shape\n- [ ] Replaces the stub in intercept.py with no API change\n- [ ] Has no Bash / gh / write tools available to itself",
+      "closedAt": "2026-04-12T03:15:54Z",
+      "createdAt": "2026-04-11T09:07:07Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 7,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P2.7] server/guard.py \u2014 Guard Agent (checkpoints A and B)",
+      "updatedAt": "2026-04-18T08:25:43Z",
+      "url": "https://github.com/KKallas/Imp/issues/7",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-12",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe single chokepoint for every Bash tool call the worker subprocess will eventually make, and the owner of the live running-subprocess state. Classifies commands as read (pass through) or write (build a proposed action and queue). Initially uses a STUB guard that auto-approves everything \u2014 the real guard lands in KKallas/Imp#7. The seam exists from day one so nothing has to be retrofitted.\n\nThis issue also establishes the **runtime control and observability** infrastructure described in v0.1.md's \"Runtime control and observability\" section: running-tasks tracking, live log streaming into `cl.Step`, `.imp/output/*.log` files, and cancellation via SIGTERM.\n\n**References**\n- v0.1.md Action Interception (how checkpoint B is enforced)\n- v0.1.md Runtime control and observability (new section)\n- v0.1.md Build Order Phase 2 step 3\n\n**Acceptance criteria**\n\n### Core interception seam\n- [ ] Function `classify_command(argv)` returns `\"read\"` / `\"write\"` / `\"unknown\"`\n- [ ] Function `propose_action(...)` builds an action_id-keyed record\n- [ ] Stub guard always returns approve, but the call site is in place (ready to be replaced by the real guard in KKallas/Imp#7)\n- [ ] Approved actions execute and return stdout/stderr to the caller\n- [ ] Read commands skip the guard entirely (no checkpoint B overhead for reads)\n- [ ] Compatible with both interception mechanisms: Claude Agent SDK pre-tool-call hook (preferred) and gh-shim-on-PATH fallback\n\n### Running-tasks map (new)\n- [ ] Maintains an in-memory `running_tasks: dict[str, RunningTask]` where each `RunningTask` records: `action_id`, `proc` (the asyncio subprocess), `pid`, `command`, `started_at`, `step` (the live Chainlit `cl.Step` for log streaming), `task_entry` (the Chainlit `cl.TaskList` entry), `log_file` (the path in `.imp/output/`)\n- [ ] Adds an entry when an approved action starts a subprocess\n- [ ] Removes the entry and finalizes the `cl.Step` / `cl.Task` when the subprocess exits naturally\n- [ ] Provides `get_running_tasks()` for callers that want a snapshot (used by sidebar status, chat \\\"status\\\" command, and the abort button)\n\n### Live log streaming (new)\n- [ ] Spawns subprocesses via `asyncio.create_subprocess_exec` with merged stdout+stderr\n- [ ] Reads stdout line-by-line and appends each line to `running_task.step.output`, then calls `await step.update()` to push to the browser in real time\n- [ ] User sees the step expand live, exactly like `tail -f`, while the subprocess runs\n\n### Per-action log files (new)\n- [ ] Every subprocess's combined stdout+stderr is also written to `.imp/output/<action_id>.log` as it streams \u2014 duplicating the in-chat `cl.Step` output\n- [ ] Power users can `tail -f .imp/output/*.log` from a separate terminal without opening the browser\n- [ ] `.imp/output/` is rotated out when the total size exceeds a configurable cap (default 100 MB), oldest files first\n\n### Cancellation / abort (new)\n- [ ] Function `abort_task(action_id: str)` sends SIGTERM to the tracked PID\n- [ ] A watchdog task waits 15 seconds; if the subprocess is still alive, sends SIGKILL\n- [ ] Pipeline scripts are expected to honor SIGTERM per the \\\"SIGTERM contract for pipeline scripts\\\" in v0.1.md \u2014 the subprocess runner does NOT try to roll back git state itself; the script is responsible for its own rollback\n- [ ] Parses the final `INTERRUPTED: branch=... pushed=... pr=...` line from stderr (if present) and posts a final `cl.Message` to the chat explaining what partial state was left and how to clean it up\n- [ ] On SIGKILL (subprocess didn't respond to SIGTERM in 15s), posts a warning that the state is unknown and logs the SIGKILL event\n\n### Budget enforcement (new)\n- [ ] Checkpoint B reads current budget counters from `server/budgets.py` (KKallas/Imp#8) before calling the guard\n- [ ] If any budget is below the relevant floor (see \\\"Budget exhaustion while a subprocess is running\\\" in v0.1.md), the action is rejected immediately with a clear reason \u2014 the guard is not called\n- [ ] **An in-flight subprocess is never killed by a budget tick.** If budgets exhaust while a subprocess is running, the subprocess runs to completion within its own `--max-tokens` cap, and only subsequent proposed actions are rejected\n- [ ] Per-invocation cap computation: when classifying a pipeline-script proposal, intercept.py helps the worker compute `--max-tokens = min(remaining_token_budget, default_per_invocation_cap)` (default 25,000 tokens, constant in `server/budgets.py`)\n\n### Manual-mode pause flag (new)\n- [ ] Reads an `accepting_new_actions` flag from `.imp/config.json` (or an in-memory variant)\n- [ ] When set to false, new proposed actions are rejected with \\\"Pause requested \u2014 current task will finish first\\\" without calling the guard\n- [ ] In-flight subprocesses are unaffected by the flag (they run to completion)\n- [ ] The flag is set/cleared via a tool the Foreman agent can call (`pause_new_actions()` / `resume_new_actions()`) and also via the sidebar switch in KKallas/Imp#24",
+      "closedAt": "2026-04-11T22:42:26Z",
+      "createdAt": "2026-04-11T09:07:06Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 6,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P2.6] server/intercept.py \u2014 action queue + read/write classifier (stub guard)",
+      "updatedAt": "2026-04-18T08:25:34Z",
+      "url": "https://github.com/KKallas/Imp/issues/6",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nRender incoming `text` messages as markdown using marked.js. Replace the plain-div rendering from P1.4 with marked.js output, sanitized.\n\n**References**\n- v0.1.md Build Order step 5\n- v0.1.md Tech Stack (marked.js)\n\n**Acceptance criteria**\n- [ ] Code blocks, lists, headings, links render correctly\n- [ ] User-supplied HTML in markdown is escaped/sanitized\n- [ ] Streaming text messages append in place rather than replacing",
+      "closedAt": "2026-04-11T16:04:18Z",
+      "createdAt": "2026-04-11T09:06:23Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 5,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P1.5] ui/renderers/markdown.js \u2014 markdown rendering",
+      "updatedAt": "2026-04-18T08:25:26Z",
+      "url": "https://github.com/KKallas/Imp/issues/5",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nTwo pages: a login form and a single-page chat UI. Vanilla JS, no React, no build step. The chat page connects to `/ws`, sends user messages, renders incoming `text` messages as plain divs (renderers come in P1.5+).\n\n**References**\n- v0.1.md File Structure (ui/)\n- v0.1.md WebSocket Message Protocol\n\n**Acceptance criteria**\n- [ ] Login page submits credentials and redirects to chat on success\n- [ ] Chat page connects to WebSocket using the session cookie\n- [ ] Typing in the input and pressing enter sends a `{type: \"user\"}` message\n- [ ] Incoming `text` messages render in the chat log",
+      "closedAt": "2026-04-11T16:04:16Z",
+      "createdAt": "2026-04-11T09:06:22Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjDw",
+          "name": "area:ui",
+          "description": "Browser frontend",
+          "color": "f9d0c4"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 4,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P1.4] ui/index.html + ui/app.js + ui/style.css \u2014 login + chat shell",
+      "updatedAt": "2026-04-18T08:25:17Z",
+      "url": "https://github.com/KKallas/Imp/issues/4",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nThe FastAPI app. Routes: `GET /login`, `POST /login`, `GET /setup`, `GET /`, `WS /ws`. Static file serving for `ui/`. Auth middleware from auth.py. Stub WebSocket that just echoes typed user messages at this stage \u2014 no agent yet.\n\n**References**\n- v0.1.md Build Order step 3\n- v0.1.md WebSocket Message Protocol\n\n**Acceptance criteria**\n- [ ] Server starts and serves the login page\n- [ ] After login, the chat page loads\n- [ ] WebSocket connects and echoes messages back as `text` typed messages\n- [ ] Missing/incomplete `.imp/config.json` redirects `/` to `/setup`",
+      "closedAt": "2026-04-11T16:04:14Z",
+      "createdAt": "2026-04-11T09:06:20Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 3,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED",
+      "title": "[P1.3] server/app.py \u2014 FastAPI app, WebSocket endpoint, static files",
+      "updatedAt": "2026-04-18T08:25:09Z",
+      "url": "https://github.com/KKallas/Imp/issues/3",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nPassword hashing (argon2), signed session cookies (itsdangerous), login form handler. Auth middleware that gates all routes except `/login` and the static assets it needs. Cookie is HTTP-only, `SameSite=Lax`, signed with the `session_secret` from `.imp/config.json`.\n\n**References**\n- v0.1.md Authentication\n- v0.1.md .imp/config.json schema\n\n**Acceptance criteria**\n- [ ] First-run generates a `session_secret` and persists it\n- [ ] Logging in with the correct password sets a cookie; logging in with wrong password returns 401\n- [ ] Unauthenticated requests to any route except /login are redirected to /login\n- [ ] WebSocket upgrade refuses with 401 if cookie missing/invalid",
+      "closedAt": "2026-04-11T16:04:11Z",
+      "createdAt": "2026-04-11T09:06:18Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 2,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P1.2] server/auth.py \u2014 single-admin password + session cookie",
+      "updatedAt": "2026-04-18T08:25:01Z",
+      "url": "https://github.com/KKallas/Imp/issues/2",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    },
+    {
+      "assignees": [],
+      "body": "**Scope**\nSingle Python entry point. Auto-bootstraps a project-local `.venv/` on first run by creating it with `venv.create()` and re-execing inside it via `os.execv`. Reads `requirements.txt`, installs any missing packages into the private venv silently (no prompt \u2014 there is nothing to ask permission about because the venv is private to this project). Generates `CHAINLIT_AUTH_SECRET` on first run into `.imp/chainlit_secret` (mode 0600). Then launches the Chainlit server via `os.execvp` of `python -m chainlit run main.py --host 127.0.0.1 --port 8420 --headless`.\n\n`IMP_USE_SYSTEM_PYTHON=1` skips the venv bootstrap for Docker images and similar environments where Python is managed externally.\n\nAfter `python imp.py`, the terminal only shows logs \u2014 all further configuration happens in the browser via the Setup Agent chat.\n\n**References**\n- v0.1.md Build Order step 1\n- v0.1.md First Run Experience\n- v0.1.md Tech Stack (Chainlit)\n- v0.1.md Authentication (CHAINLIT_AUTH_SECRET)\n\n**Acceptance criteria**\n- [ ] `python imp.py` from a clean checkout (no `.venv/`) creates `.venv/`, installs deps, generates a chainlit auth secret, and reaches \"Your app is available at http://localhost:8420\" (Chainlit's own ready message) with no further user input \u2014 works with stdin redirected from `/dev/null` so VPS systemd deploys are supported\n- [ ] Subsequent runs (`.venv/` exists, deps installed, chainlit_secret present) skip all setup and start Chainlit in a few seconds\n- [ ] A corrupted `.venv/` (missing or non-runnable python) is detected and the venv is recreated automatically\n- [ ] `IMP_USE_SYSTEM_PYTHON=1` skips the bootstrap and uses the active interpreter; warns if no venv is active\n- [ ] `CHAINLIT_AUTH_SECRET` is generated once on first run (32 bytes base64, mode 0600) and persisted to `.imp/chainlit_secret`; subsequent runs reuse it\n- [ ] No CLI flags except possibly `--host` / `--port` (everything else is in chat per the doc); host/port currently hardcoded constants in imp.py, config-driven version arrives later if needed\n- [ ] Log output is correctly ordered (no buffering surprises) \u2014 `print(..., flush=True)` and `PYTHONUNBUFFERED=1` for the exec'd chainlit process\n- [ ] First-run import is pre-compiled via `pip install --compile` + `python -m compileall` on the site-packages so the user doesn't see a 30-60s \"looks hung\" chainlit import\n\n**Note about what this issue used to cover**\nThe original P1.1 scope also described creating a stub `server/app.py` so uvicorn would have something to bind to. That entire approach was dropped when we adopted Chainlit (see the v0.1.md \"Obsolete from the pre-Chainlit plan\" section). Uvicorn is no longer our server; `python -m chainlit run main.py` is. There is no stub to maintain.",
+      "closedAt": "2026-04-11T12:56:23Z",
+      "createdAt": "2026-04-11T09:06:17Z",
+      "labels": [
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PiVQ",
+          "name": "imp:baseline",
+          "description": "Part of original timeline",
+          "color": "c5def5"
+        },
+        {
+          "id": "LA_kwDORNPAzM8AAAACe7PjCg",
+          "name": "area:server",
+          "description": "FastAPI / Python backend",
+          "color": "5319e7"
+        }
+      ],
+      "milestone": {
+        "number": 9,
+        "title": "V0.1",
+        "description": "All phases (1-7) consolidated into a single v0.1 release milestone",
+        "dueOn": null
+      },
+      "number": 1,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "title": "[P1.1] imp.py \u2014 entry point and server launch",
+      "updatedAt": "2026-04-18T08:24:52Z",
+      "url": "https://github.com/KKallas/Imp/issues/1",
+      "fields": {
+        "duration_days": {
+          "value": 5,
+          "source": "heuristic",
+          "confidence": "medium"
+        },
+        "depends_on": {
+          "value": [],
+          "raw": null,
+          "unparseable": [],
+          "source": "heuristic",
+          "confidence": "high"
+        },
+        "start_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        },
+        "end_date": {
+          "value": "2026-04-11",
+          "source": "synthesized",
+          "confidence": "high"
+        }
+      },
+      "depends_on_parsed": []
+    }
+  ],
+  "enriched_at": "2026-04-18T13:27:08.678856+00:00",
+  "dependency_edges": [],
+  "delayed_count": 0,
+  "estimated_at": "2026-04-18T13:27:55.287309+00:00"
+}

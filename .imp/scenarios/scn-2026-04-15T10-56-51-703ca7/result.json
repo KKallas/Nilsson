@@ -1,0 +1,507 @@
+{
+  "ran_at": "2026-04-15T10:56:51.285428+00:00",
+  "baseline_hash": "sha256:103d79c8af212c20",
+  "scenarios": [
+    {
+      "name": "as-is",
+      "charts": [
+        {
+          "data": [
+            {
+              "type": "bar",
+              "orientation": "h",
+              "x": [
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5
+              ],
+              "y": [
+                "#36 [P2.9b] dispatcher: follow-up LLM turn to answer questions from command output",
+                "#33 [P2.9] server/dispatcher.py \u2014 LLM-driven chat \u2192 tool routing + clarifications",
+                "#27 [P1.2] main.py \u2014 Chainlit app skeleton (auth, setup/foreman dispatch, on_message stub)",
+                "#25 [P7.25] docs/README.md \u2014 non-developer setup guide",
+                "#24 [P6.16] Chainlit control surfaces \u2014 sidebar, TaskList, abort button",
+                "#23 [P6.23] server/loop.py \u2014 autonomous loop scheduler",
+                "#22 [P5.22] ui/renderers/proposed_action.js \u2014 \"Foreman wants to do X\" panel",
+                "#21 [P5.21] foreman_agent.py \u2014 register code-writing pipeline tools",
+                "#20 [P5.20] 99-tools/_state.py \u2014 shim into server/budgets.py",
+                "#19 [P4.19] templates/{kanban,burndown,comparison}.html.j2 \u2014 remaining chart templates",
+                "#18 [P4.18] ui/renderers/selection.js \u2014 clickable choice buttons",
+                "#17 [P4.17] ui/renderers/diff.js \u2014 diff rendering with diff2html",
+                "#16 [P4.16] pipeline/scenario.py \u2014 A/B timeline comparison",
+                "#15 [P4.15] ui/renderers/chart.js \u2014 chart injection into the chat log",
+                "#14 [P4.14] pipeline/render_chart.py + templates/gantt.html.j2 \u2014 first chart",
+                "#13 [P4.13] pipeline/heuristics.py \u2014 infer durations, dependencies, delays",
+                "#12 [P4.12] pipeline/sync_issues.py \u2014 pull issues + project field values from GitHub",
+                "#11 [P4.11] server/foreman_agent.py \u2014 worker definition + tool registry",
+                "#10 [P3.10] pipeline/project_bootstrap.py + templates/fields.json",
+                "#9 [P3.9] server/setup_agent.py \u2014 Setup-mode agent and its tools",
+                "#8 [P2.8] server/budgets.py \u2014 token + edit + task counters",
+                "#7 [P2.7] server/guard.py \u2014 Guard Agent (checkpoints A and B)",
+                "#6 [P2.6] server/intercept.py \u2014 action queue + read/write classifier (stub guard)",
+                "#5 [P1.5] ui/renderers/markdown.js \u2014 markdown rendering",
+                "#4 [P1.4] ui/index.html + ui/app.js + ui/style.css \u2014 login + chat shell",
+                "#3 [P1.3] server/app.py \u2014 FastAPI app, WebSocket endpoint, static files",
+                "#2 [P1.2] server/auth.py \u2014 single-admin password + session cookie",
+                "#1 [P1.1] imp.py \u2014 entry point and server launch"
+              ],
+              "base": [
+                "2026-04-14",
+                "2026-04-14",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11"
+              ],
+              "marker": {
+                "color": [
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e"
+                ]
+              }
+            }
+          ],
+          "layout": {
+            "title": {
+              "text": "As-Is"
+            },
+            "xaxis": {
+              "type": "date"
+            },
+            "yaxis": {
+              "automargin": true,
+              "autorange": "reversed"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        [
+          "duration",
+          "9 days"
+        ],
+        [
+          "finish date",
+          "2026-04-20"
+        ]
+      ],
+      "lists": [
+        [
+          "blockers",
+          [
+            "none"
+          ]
+        ]
+      ],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "start-2-weeks-later",
+      "charts": [
+        {
+          "data": [
+            {
+              "type": "bar",
+              "orientation": "h",
+              "x": [
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5,
+                5
+              ],
+              "y": [
+                "#36 [P2.9b] dispatcher: follow-up LLM turn to answer questions from command output",
+                "#33 [P2.9] server/dispatcher.py \u2014 LLM-driven chat \u2192 tool routing + clarifications",
+                "#27 [P1.2] main.py \u2014 Chainlit app skeleton (auth, setup/foreman dispatch, on_message stub)",
+                "#25 [P7.25] docs/README.md \u2014 non-developer setup guide",
+                "#24 [P6.16] Chainlit control surfaces \u2014 sidebar, TaskList, abort button",
+                "#23 [P6.23] server/loop.py \u2014 autonomous loop scheduler",
+                "#22 [P5.22] ui/renderers/proposed_action.js \u2014 \"Foreman wants to do X\" panel",
+                "#21 [P5.21] foreman_agent.py \u2014 register code-writing pipeline tools",
+                "#20 [P5.20] 99-tools/_state.py \u2014 shim into server/budgets.py",
+                "#19 [P4.19] templates/{kanban,burndown,comparison}.html.j2 \u2014 remaining chart templates",
+                "#18 [P4.18] ui/renderers/selection.js \u2014 clickable choice buttons",
+                "#17 [P4.17] ui/renderers/diff.js \u2014 diff rendering with diff2html",
+                "#16 [P4.16] pipeline/scenario.py \u2014 A/B timeline comparison",
+                "#15 [P4.15] ui/renderers/chart.js \u2014 chart injection into the chat log",
+                "#14 [P4.14] pipeline/render_chart.py + templates/gantt.html.j2 \u2014 first chart",
+                "#13 [P4.13] pipeline/heuristics.py \u2014 infer durations, dependencies, delays",
+                "#12 [P4.12] pipeline/sync_issues.py \u2014 pull issues + project field values from GitHub",
+                "#11 [P4.11] server/foreman_agent.py \u2014 worker definition + tool registry",
+                "#10 [P3.10] pipeline/project_bootstrap.py + templates/fields.json",
+                "#9 [P3.9] server/setup_agent.py \u2014 Setup-mode agent and its tools",
+                "#8 [P2.8] server/budgets.py \u2014 token + edit + task counters",
+                "#7 [P2.7] server/guard.py \u2014 Guard Agent (checkpoints A and B)",
+                "#6 [P2.6] server/intercept.py \u2014 action queue + read/write classifier (stub guard)",
+                "#5 [P1.5] ui/renderers/markdown.js \u2014 markdown rendering",
+                "#4 [P1.4] ui/index.html + ui/app.js + ui/style.css \u2014 login + chat shell",
+                "#3 [P1.3] server/app.py \u2014 FastAPI app, WebSocket endpoint, static files",
+                "#2 [P1.2] server/auth.py \u2014 single-admin password + session cookie",
+                "#1 [P1.1] imp.py \u2014 entry point and server launch"
+              ],
+              "base": [
+                "2026-05-02",
+                "2026-05-02",
+                "2026-04-29",
+                "2026-05-03",
+                "2026-05-03",
+                "2026-05-03",
+                "2026-04-29",
+                "2026-05-03",
+                "2026-05-03",
+                "2026-05-03",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-05-03",
+                "2026-04-29",
+                "2026-05-03",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29",
+                "2026-04-29"
+              ],
+              "marker": {
+                "color": [
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e"
+                ]
+              }
+            }
+          ],
+          "layout": {
+            "title": {
+              "text": "Start shifted to 2026-04-29"
+            },
+            "xaxis": {
+              "type": "date"
+            },
+            "yaxis": {
+              "automargin": true,
+              "autorange": "reversed"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        [
+          "duration",
+          "9 days"
+        ],
+        [
+          "finish date",
+          "2026-05-08"
+        ]
+      ],
+      "lists": [
+        [
+          "blockers",
+          [
+            "none"
+          ]
+        ]
+      ],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "4-devs-not-2",
+      "charts": [
+        {
+          "data": [
+            {
+              "type": "bar",
+              "orientation": "h",
+              "x": [
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2,
+                2
+              ],
+              "y": [
+                "#36 [P2.9b] dispatcher: follow-up LLM turn to answer questions from command output",
+                "#33 [P2.9] server/dispatcher.py \u2014 LLM-driven chat \u2192 tool routing + clarifications",
+                "#27 [P1.2] main.py \u2014 Chainlit app skeleton (auth, setup/foreman dispatch, on_message stub)",
+                "#25 [P7.25] docs/README.md \u2014 non-developer setup guide",
+                "#24 [P6.16] Chainlit control surfaces \u2014 sidebar, TaskList, abort button",
+                "#23 [P6.23] server/loop.py \u2014 autonomous loop scheduler",
+                "#22 [P5.22] ui/renderers/proposed_action.js \u2014 \"Foreman wants to do X\" panel",
+                "#21 [P5.21] foreman_agent.py \u2014 register code-writing pipeline tools",
+                "#20 [P5.20] 99-tools/_state.py \u2014 shim into server/budgets.py",
+                "#19 [P4.19] templates/{kanban,burndown,comparison}.html.j2 \u2014 remaining chart templates",
+                "#18 [P4.18] ui/renderers/selection.js \u2014 clickable choice buttons",
+                "#17 [P4.17] ui/renderers/diff.js \u2014 diff rendering with diff2html",
+                "#16 [P4.16] pipeline/scenario.py \u2014 A/B timeline comparison",
+                "#15 [P4.15] ui/renderers/chart.js \u2014 chart injection into the chat log",
+                "#14 [P4.14] pipeline/render_chart.py + templates/gantt.html.j2 \u2014 first chart",
+                "#13 [P4.13] pipeline/heuristics.py \u2014 infer durations, dependencies, delays",
+                "#12 [P4.12] pipeline/sync_issues.py \u2014 pull issues + project field values from GitHub",
+                "#11 [P4.11] server/foreman_agent.py \u2014 worker definition + tool registry",
+                "#10 [P3.10] pipeline/project_bootstrap.py + templates/fields.json",
+                "#9 [P3.9] server/setup_agent.py \u2014 Setup-mode agent and its tools",
+                "#8 [P2.8] server/budgets.py \u2014 token + edit + task counters",
+                "#7 [P2.7] server/guard.py \u2014 Guard Agent (checkpoints A and B)",
+                "#6 [P2.6] server/intercept.py \u2014 action queue + read/write classifier (stub guard)",
+                "#5 [P1.5] ui/renderers/markdown.js \u2014 markdown rendering",
+                "#4 [P1.4] ui/index.html + ui/app.js + ui/style.css \u2014 login + chat shell",
+                "#3 [P1.3] server/app.py \u2014 FastAPI app, WebSocket endpoint, static files",
+                "#2 [P1.2] server/auth.py \u2014 single-admin password + session cookie",
+                "#1 [P1.1] imp.py \u2014 entry point and server launch"
+              ],
+              "base": [
+                "2026-04-14",
+                "2026-04-14",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-15",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11",
+                "2026-04-11"
+              ],
+              "marker": {
+                "color": [
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#3b82f6",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e",
+                  "#22c55e"
+                ]
+              }
+            }
+          ],
+          "layout": {
+            "title": {
+              "text": "4 devs instead of 2 (durations halved)"
+            },
+            "xaxis": {
+              "type": "date"
+            },
+            "yaxis": {
+              "automargin": true,
+              "autorange": "reversed"
+            }
+          }
+        }
+      ],
+      "metrics": [
+        [
+          "duration",
+          "6 days"
+        ],
+        [
+          "finish date",
+          "2026-04-17"
+        ]
+      ],
+      "lists": [
+        [
+          "blockers",
+          [
+            "none"
+          ]
+        ]
+      ],
+      "texts": [],
+      "tables": []
+    }
+  ]
+}

@@ -389,7 +389,7 @@ async def test_check_action_uses_code_prompt_for_inline_python() -> None:
     try:
         await guard.check_action(
             user_intent="count the open issues",
-            proposed_command='python3 -c "import json; print(len(json.load(open(\'.imp/issues.json\'))))"',
+            proposed_command='python3 -c "import json; print(len(json.load(open(\'.nilsson/issues.json\'))))"',
             worker_rationale="quick count from the cached sync",
         )
     finally:
@@ -436,7 +436,7 @@ async def test_check_action_uses_base_prompt_for_gh_action() -> None:
 
 async def test_check_action_code_prompt_propagates_reject_with_rule() -> None:
     """A reject from the code-review path comes back through check_action
-    with the cited rule preserved verbatim — admins / Foreman see the
+    with the cited rule preserved verbatim — admins / Nilsson see the
     specific checklist item that failed."""
 
     async def rejecting_backend(system_prompt: str, user_prompt: str) -> str:

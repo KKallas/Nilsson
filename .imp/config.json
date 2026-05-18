@@ -1,0 +1,28 @@
+{
+  "admin_password_hash": "$argon2id$v=19$m=65536,t=3,p=4$41u0rREjtycqMhp7JI1/nw$xlmcAuedN7OghNxkxxA98Sui0sbNpKZ5wA/rEwMuFDI",
+  "repo": "KKallas/Imp",
+  "setup_complete": true,
+  "accepting_new_actions": true,
+  "show_budget_bar": true,
+  "loop": {
+    "paused": false,
+    "scope": {
+      "only_issues": [
+        42,
+        43
+      ]
+    }
+  },
+  "active_workflows": [
+    "dev_sync",
+    "burndown_10d"
+  ],
+  "active_tools": [
+    "imp",
+    "presets",
+    "remote",
+    "render",
+    "github",
+    "llm"
+  ]
+}

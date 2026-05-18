@@ -1,5 +1,5 @@
-# Imp runtime state
-.imp/
+# Nilsson runtime state
+.nilsson/
 
 # Python
 __pycache__/

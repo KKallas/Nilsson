@@ -1,0 +1,40 @@
+{
+  "ran_at": "2026-04-15T10:47:58.388699+00:00",
+  "baseline_hash": "sha256:0fc1142a8ca0a558",
+  "scenarios": [
+    {
+      "name": "as-is",
+      "charts": [],
+      "metrics": [
+        [
+          "first start",
+          "2026-04-11"
+        ],
+        [
+          "last end",
+          "2026-04-18"
+        ],
+        [
+          "issue count",
+          "3"
+        ]
+      ],
+      "lists": [],
+      "texts": [],
+      "tables": []
+    },
+    {
+      "name": "start 2 weeks from now",
+      "charts": [],
+      "metrics": [
+        [
+          "first start",
+          "2026-04-25"
+        ]
+      ],
+      "lists": [],
+      "texts": [],
+      "tables": []
+    }
+  ]
+}

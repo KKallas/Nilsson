@@ -2,10 +2,10 @@
 
 Run directly: `.venv/bin/python tests/test_chat_history.py`
 No pytest — asserts → exit 0 on success, exit 1 on failure. Matches
-the rest of the Imp test suite.
+the rest of the Nilsson test suite.
 
 Every test redirects `CHATS_DIR` to a tempdir so the shared
-`.imp/chats/` is never touched. The titling-LLM backend is swapped
+`.nilsson/chats/` is never touched. The titling-LLM backend is swapped
 with a scripted fake — no real SDK calls.
 """
 
@@ -23,12 +23,12 @@ sys.path.insert(0, str(ROOT))
 from server import chat_history  # noqa: E402
 
 
-_TMP_BASE = Path(tempfile.mkdtemp(prefix="imp-chat-history-"))
+_TMP_BASE = Path(tempfile.mkdtemp(prefix="nilsson-chat-history-"))
 
 
 def _fresh_dir() -> Path:
     """One tempdir per test so cross-test file bleed isn't possible."""
-    d = Path(tempfile.mkdtemp(prefix="imp-chat-history-", dir=_TMP_BASE))
+    d = Path(tempfile.mkdtemp(prefix="nilsson-chat-history-", dir=_TMP_BASE))
     return d
 
 

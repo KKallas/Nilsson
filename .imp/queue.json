@@ -1,0 +1,573 @@
+[
+  {
+    "id": "6460f5d67a54",
+    "tool": "github",
+    "title": "Review PR #428",
+    "detail_html": "<p>Needs approval</p>",
+    "actions": [
+      {
+        "label": "Approve",
+        "action": "approve"
+      }
+    ],
+    "status": "approve",
+    "created_at": "2026-04-19T22:24:47+00:00",
+    "resolved_at": "2026-04-28T11:22:22+00:00"
+  },
+  {
+    "id": "2b3104e0bca0",
+    "tool": "workflow:weekly_triage",
+    "title": "Review burndown chart",
+    "detail_html": "<h3>Weekly Triage \u2014 Step 4</h3><p>The burndown chart has been generated. Review it before posting the summary to GitHub.</p><p>Chart at: <code>/Users/kasparkallas/Documents/GitHub/Imp/.imp/output/burndown.html</code></p><p><a href=\"/render/burndown?mode=viewer\" target=\"_blank\">Open interactive chart</a></p>",
+    "actions": [
+      {
+        "label": "Approve & Post",
+        "action": "approve"
+      },
+      {
+        "label": "Skip Posting",
+        "action": "skip"
+      }
+    ],
+    "status": "approve",
+    "created_at": "2026-04-21T12:18:22+00:00",
+    "resolved_at": "2026-04-21T12:51:05+00:00"
+  },
+  {
+    "id": "952c88bb4856",
+    "tool": "workflow:weekly_triage",
+    "title": "Review burndown chart",
+    "detail_html": "<h3>Weekly Triage \u2014 Step 4</h3><p>The burndown chart has been generated. Review it before posting the summary to GitHub.</p><p>Chart at: <code>/Users/kasparkallas/Documents/GitHub/Imp/.imp/output/burndown.html</code></p><p><a href=\"/render/burndown?mode=viewer\" target=\"_blank\">Open interactive chart</a></p>",
+    "actions": [
+      {
+        "label": "Approve & Post",
+        "action": "approve"
+      },
+      {
+        "label": "Skip Posting",
+        "action": "skip"
+      }
+    ],
+    "status": "skip",
+    "created_at": "2026-04-21T17:06:25+00:00",
+    "resolved_at": "2026-04-21T17:07:08+00:00"
+  },
+  {
+    "id": "361304f9cf31",
+    "tool": "workflow:weekly_triage",
+    "title": "Review burndown chart",
+    "detail_html": "<h3>Weekly Triage \u2014 Step 4</h3><p>The burndown chart has been generated. Review it before posting the summary to GitHub.</p><p>Chart at: <code>/Users/kasparkallas/Documents/GitHub/Imp/.imp/output/burndown.html</code></p><p><a href=\"/render/burndown?mode=viewer\" target=\"_blank\">Open interactive chart</a></p>",
+    "actions": [
+      {
+        "label": "Approve & Post",
+        "action": "approve"
+      },
+      {
+        "label": "Skip Posting",
+        "action": "skip"
+      }
+    ],
+    "status": "skip",
+    "created_at": "2026-04-21T17:16:22+00:00",
+    "resolved_at": "2026-04-21T17:17:05+00:00"
+  },
+  {
+    "id": "e52af932c310",
+    "tool": "workflow:weekly_triage",
+    "title": "Review burndown chart",
+    "detail_html": "<h3>Weekly Triage \u2014 Step 4</h3><p>The burndown chart has been generated. Review it before posting the summary to GitHub.</p><p>Chart at: <code>/Users/kasparkallas/Documents/GitHub/Imp/.imp/output/burndown.html</code></p><p><a href=\"/render/burndown?mode=viewer\" target=\"_blank\">Open interactive chart</a></p>",
+    "actions": [
+      {
+        "label": "Approve & Post",
+        "action": "approve"
+      },
+      {
+        "label": "Skip Posting",
+        "action": "skip"
+      }
+    ],
+    "status": "approve",
+    "created_at": "2026-04-21T17:17:10+00:00",
+    "resolved_at": "2026-04-21T17:17:15+00:00"
+  },
+  {
+    "id": "f2f9fa4d1f5d",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"http://172.16.5.39:8421/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://172.16.5.39:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Server: http://172.16.5.39:8421<br>Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-22T08:36:03+00:00",
+    "resolved_at": "2026-04-22T09:06:23+00:00"
+  },
+  {
+    "id": "bee2677712be",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"http://172.16.5.39:8421/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://172.16.5.39:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Server: http://172.16.5.39:8421<br>Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-22T09:07:20+00:00",
+    "resolved_at": "2026-04-22T09:11:47+00:00"
+  },
+  {
+    "id": "2bb6a8b74d3f",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"http://172.20.10.2:8421/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://172.20.10.2:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Server: http://172.20.10.2:8421<br>Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-23T14:35:26+00:00",
+    "resolved_at": "2026-04-23T14:42:00+00:00"
+  },
+  {
+    "id": "4ca3c6abb082",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"http://172.20.10.2:8421/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://172.20.10.2:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Server: http://172.20.10.2:8421<br>Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-23T14:42:26+00:00",
+    "resolved_at": "2026-04-23T14:45:09+00:00"
+  },
+  {
+    "id": "b589217865f0",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"http://172.20.10.2:8421/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://172.20.10.2:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Server: http://172.20.10.2:8421<br>Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-23T14:45:54+00:00",
+    "resolved_at": "2026-04-23T14:57:15+00:00"
+  },
+  {
+    "id": "ec562b510880",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy the command below (replace HOST with your server address):<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">loading...</code></p><script>document.getElementById(\"sync-cmd\").textContent=\"curl -o imp-sync.py \" + location.origin + \"/imp-sync.py && python imp-sync.py\";</script><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-23T14:57:48+00:00",
+    "resolved_at": "2026-04-23T15:05:42+00:00"
+  },
+  {
+    "id": "817dcfe96123",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://HOST:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-24T12:00:34+00:00",
+    "resolved_at": "2026-04-24T12:00:48+00:00"
+  },
+  {
+    "id": "e5b807843dc4",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://HOST:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-24T12:37:01+00:00",
+    "resolved_at": "2026-04-24T14:07:53+00:00"
+  },
+  {
+    "id": "f0f4e9a23072",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>The sync endpoint is ready. Download the sync script and run it locally:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://HOST:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "stop"
+      }
+    ],
+    "status": "stop",
+    "created_at": "2026-04-24T18:59:15+00:00",
+    "resolved_at": "2026-04-24T18:59:21+00:00"
+  },
+  {
+    "id": "f39b7382f483",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T18:59:54+00:00",
+    "resolved_at": "2026-04-26T19:01:27+00:00"
+  },
+  {
+    "id": "c9a8497fb3d5",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:06:29+00:00",
+    "resolved_at": "2026-04-26T19:07:22+00:00"
+  },
+  {
+    "id": "fbd43612a852",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:12:27+00:00",
+    "resolved_at": "2026-04-26T19:18:23+00:00"
+  },
+  {
+    "id": "93feac0f3bd1",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:24:30+00:00",
+    "resolved_at": "2026-04-26T19:24:47+00:00"
+  },
+  {
+    "id": "efde1bbb6829",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:24:50+00:00",
+    "resolved_at": "2026-04-26T19:27:51+00:00"
+  },
+  {
+    "id": "4dbd39c6c34f",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:27:54+00:00",
+    "resolved_at": "2026-04-26T19:28:36+00:00"
+  },
+  {
+    "id": "d0a31ac652a3",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:28:49+00:00",
+    "resolved_at": "2026-04-26T19:32:37+00:00"
+  },
+  {
+    "id": "24fc4b80ddf3",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:29:03+00:00",
+    "resolved_at": "2026-04-26T19:32:39+00:00"
+  },
+  {
+    "id": "4aa147c1a8c8",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:32:43+00:00",
+    "resolved_at": "2026-04-26T19:34:19+00:00"
+  },
+  {
+    "id": "13e7aceb69a0",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-26T19:34:31+00:00",
+    "resolved_at": "2026-04-27T12:23:01+00:00"
+  },
+  {
+    "id": "48cce2424e9e",
+    "tool": "workflow:dev_sync",
+    "title": "Developer sync active",
+    "detail_html": "<h3>Developer Sync Active</h3><p>Sync endpoints are now accessible. Download the sync script and run it on your local machine:</p><p style=\"margin:16px 0;\"><a href=\"/imp-sync.py\" download=\"imp-sync.py\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff; border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download imp-sync.py</a></p><p style=\"font-size:13px;color:#8b949e;\">Or copy this command:<br><code id=\"sync-cmd\" style=\"background:#161b22;padding:4px 8px;border-radius:4px;font-size:12px;\">curl -o imp-sync.py http://192.168.2.114:8421/imp-sync.py && python imp-sync.py</code></p><p style=\"font-size:12px;color:#8b949e;margin-top:12px;\">Syncing: tools/, workflows/, renderers/, public/</p>",
+    "actions": [
+      {
+        "label": "Stop sync",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-29T05:59:29+00:00",
+    "resolved_at": "2026-04-29T07:10:04+00:00"
+  },
+  {
+    "id": "6f7b8520b292",
+    "tool": "workflow:burndown_10d",
+    "title": "10-Day Burndown",
+    "detail_html": "<div style=\"padding:12px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#e0e0e0;\"><h3 style=\"margin:0 0 12px;color:#fff;\">10-Day Burndown Ready</h3><p style=\"margin:0 0 8px;color:#8b949e;font-size:13px;\">Apr 21 \u2014 Apr 30  |  Excluding: #48-50, #65, #70, #111, #112</p><div style=\"display:flex;gap:10px;margin-top:16px;\"><a href=\"http://127.0.0.1:8421/public/charts/4d2253b329db.html\" target=\"_blank\" style=\"display:inline-block;padding:8px 20px;background:#58a6ff;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Open Dashboard</a><a href=\"http://127.0.0.1:8421/renderpng?src=/public/charts/4d2253b329db.html\" target=\"_blank\" download=\"burndown.png\" style=\"display:inline-block;padding:8px 20px;background:#238636;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;\">Download PNG</a></div></div>",
+    "actions": [
+      {
+        "label": "Dismiss",
+        "action": "continue"
+      }
+    ],
+    "status": "continue",
+    "created_at": "2026-04-30T08:19:49+00:00",
+    "resolved_at": "2026-04-30T08:21:51+00:00"
+  },
+  {
+    "id": "c438ed3022bb",
+    "tool": "general",
+    "title": "test",
+    "detail_html": "test",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T17:15:07+00:00",
+    "resolved_at": "2026-05-03T17:51:36+00:00"
+  },
+  {
+    "id": "25f958785460",
+    "tool": "test",
+    "title": "test",
+    "detail_html": "test",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T17:52:09+00:00",
+    "resolved_at": "2026-05-03T17:58:04+00:00"
+  },
+  {
+    "id": "cb31bbd4ffb2",
+    "tool": "general",
+    "title": "test",
+    "detail_html": "test 88",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T17:59:04+00:00",
+    "resolved_at": "2026-05-03T18:01:09+00:00"
+  },
+  {
+    "id": "7b8beb382e89",
+    "tool": "general",
+    "title": "test",
+    "detail_html": "test 788",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:01:25+00:00",
+    "resolved_at": "2026-05-03T18:05:04+00:00"
+  },
+  {
+    "id": "f1225a506ea2",
+    "tool": "imp_test_tool",
+    "title": "Test item",
+    "detail_html": "hello from the new tool",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:05:49+00:00",
+    "resolved_at": "2026-05-03T18:05:54+00:00"
+  },
+  {
+    "id": "a1aaf0fe4bac",
+    "tool": "general",
+    "title": "test",
+    "detail_html": "test 788",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:09:43+00:00",
+    "resolved_at": "2026-05-03T18:09:51+00:00"
+  },
+  {
+    "id": "a1fb40e57a17",
+    "tool": "test",
+    "title": "Test message",
+    "detail_html": "This is a test queue item.",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:40:33+00:00",
+    "resolved_at": "2026-05-03T18:40:39+00:00"
+  },
+  {
+    "id": "5f33e027afbf",
+    "tool": "test",
+    "title": "Test message",
+    "detail_html": "This is a test queue item.",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:45:41+00:00",
+    "resolved_at": "2026-05-03T18:45:48+00:00"
+  },
+  {
+    "id": "e9f88f5e2001",
+    "tool": "test",
+    "title": "Test message",
+    "detail_html": "with love from your new tool",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:50:21+00:00",
+    "resolved_at": "2026-05-03T18:53:27+00:00"
+  },
+  {
+    "id": "7ecfe06b9185",
+    "tool": "test",
+    "title": "Test Message",
+    "detail_html": "This is a test queue item to verify the queue is working.",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:53:10+00:00",
+    "resolved_at": "2026-05-03T18:53:25+00:00"
+  },
+  {
+    "id": "8362c9adea07",
+    "tool": "test",
+    "title": "Test Message",
+    "detail_html": "Hello from test_tool8!",
+    "actions": [
+      {
+        "label": "Done",
+        "action": "done"
+      }
+    ],
+    "status": "done",
+    "created_at": "2026-05-03T18:54:33+00:00",
+    "resolved_at": "2026-05-03T18:54:37+00:00"
+  }
+]

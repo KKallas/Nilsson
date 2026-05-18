@@ -23,7 +23,7 @@ import heuristics as h  # noqa: E402
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_issues.json"
 
 # Pin "today" so the delay tests are deterministic. Fixture issue #12
-# has end_date=2026-04-13 and is OPEN with imp:baseline → delayed by
+# has end_date=2026-04-13 and is OPEN with nilsson:baseline → delayed by
 # 2 days against this anchor.
 TODAY = date(2026, 4, 15)
 
@@ -106,7 +106,7 @@ def test_infer_duration_handles_zero_or_negative_as_missing() -> None:
 def test_detect_delay_returns_record_for_overdue_open_baseline_issue() -> None:
     issue = {
         "state": "OPEN",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {"end_date": "2026-04-13"},
     }
     delay = h.detect_delay(issue, today=TODAY)
@@ -121,7 +121,7 @@ def test_detect_delay_returns_record_for_overdue_open_baseline_issue() -> None:
 def test_detect_delay_skips_closed_issue_even_if_overdue() -> None:
     issue = {
         "state": "CLOSED",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {"end_date": "2026-04-05"},
     }
     assert h.detect_delay(issue, today=TODAY) is None
@@ -141,7 +141,7 @@ def test_detect_delay_skips_issue_without_baseline_label() -> None:
 def test_detect_delay_skips_issue_without_end_date() -> None:
     issue = {
         "state": "OPEN",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {},
     }
     assert h.detect_delay(issue, today=TODAY) is None
@@ -151,7 +151,7 @@ def test_detect_delay_skips_issue_without_end_date() -> None:
 def test_detect_delay_skips_when_end_date_in_future() -> None:
     issue = {
         "state": "OPEN",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {"end_date": "2026-12-01"},
     }
     assert h.detect_delay(issue, today=TODAY) is None
@@ -161,7 +161,7 @@ def test_detect_delay_skips_when_end_date_in_future() -> None:
 def test_detect_delay_soft_skip_on_malformed_date() -> None:
     issue = {
         "state": "OPEN",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {"end_date": "not-a-date"},
     }
     assert h.detect_delay(issue, today=TODAY) is None
@@ -191,7 +191,7 @@ def test_enrich_issue_wraps_existing_fields_with_provenance() -> None:
 def test_enrich_issue_attaches_depends_on_parsed_array() -> None:
     issue = {
         "number": 14,
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "state": "OPEN",
         "fields": {"depends_on": "#12, garbage, #99"},
     }
@@ -211,7 +211,7 @@ def test_enrich_issue_attaches_delay_record_when_overdue() -> None:
     issue = {
         "number": 12,
         "state": "OPEN",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {"end_date": "2026-04-13"},
     }
     out = h.enrich_issue(issue, today=TODAY)
@@ -224,7 +224,7 @@ def test_enrich_issue_no_delay_key_when_not_delayed() -> None:
     issue = {
         "number": 11,
         "state": "CLOSED",
-        "labels": [{"name": "imp:baseline"}],
+        "labels": [{"name": "nilsson:baseline"}],
         "fields": {"end_date": "2026-04-15"},
     }
     out = h.enrich_issue(issue, today=TODAY)
@@ -266,13 +266,13 @@ def test_enrich_full_payload_against_fixture() -> None:
     assert by_num[11]["fields"]["duration_days"]["source"] == "github"
     assert by_num[11]["depends_on_parsed"] == [10, 9]
 
-    # #12: OPEN, imp:baseline, end_date 2026-04-13 → delayed by 2 days
+    # #12: OPEN, nilsson:baseline, end_date 2026-04-13 → delayed by 2 days
     assert "delay" in by_num[12]
     assert by_num[12]["delay"]["days_overdue"] == 2
-    # No github duration → heuristic from "imp:baseline" label hint
+    # No github duration → heuristic from "nilsson:baseline" label hint
     dur12 = by_num[12]["fields"]["duration_days"]
     assert dur12["source"] == "heuristic"
-    assert dur12["value"] == h.DURATION_HINT_BY_LABEL["imp:baseline"]
+    assert dur12["value"] == h.DURATION_HINT_BY_LABEL["nilsson:baseline"]
 
     # #13: empty fields, "area:pipeline" label → heuristic medium
     dur13 = by_num[13]["fields"]["duration_days"]
@@ -292,7 +292,7 @@ def test_enrich_full_payload_against_fixture() -> None:
 
     # #15: CLOSED past end_date → NOT delayed
     assert "delay" not in by_num[15]
-    # #16: OPEN past end_date but no imp:baseline → NOT delayed
+    # #16: OPEN past end_date but no nilsson:baseline → NOT delayed
     assert "delay" not in by_num[16]
 
     # Top-level summary metrics

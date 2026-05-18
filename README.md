@@ -1,4 +1,4 @@
-# Imp
+# Nilsson
 
 AI-powered project manager that lives inside your GitHub repo. Manage issues, run workflows, and chat with an AI agent — all from a single web interface.
 
@@ -9,16 +9,16 @@ AI-powered project manager that lives inside your GitHub repo. Manage issues, ru
 
 ## Setup
 
-1. Copy the Imp folder into your project directory (or clone this repo)
+1. Copy the Nilsson folder into your project directory (or clone this repo)
 2. Run:
 
 ```
-python imp.py
+python nilsson.py
 ```
 
 3. Open http://127.0.0.1:8421 in your browser
 
-That's it. On first run, Imp creates a virtual environment, installs dependencies, and starts the web server. No manual pip install needed.
+That's it. On first run, Nilsson creates a virtual environment, installs dependencies, and starts the web server. No manual pip install needed.
 
 ## First run
 
@@ -34,7 +34,7 @@ Other tabs (Queue, Workflows, Tools) are locked until setup completes. Once done
 
 ## How it works
 
-Imp is deliberately simple. No MCP servers, no complex protocols, no middleware layers.
+Nilsson is deliberately simple. No MCP servers, no complex protocols, no middleware layers.
 
 ```
 Browser (HTML + JS)
@@ -50,28 +50,28 @@ The agent talks to GitHub through `gh` commands. Tools are plain Python scripts 
 
 ### Why no MCP
 
-MCP adds a protocol layer between the agent and the tools. Imp doesn't need it — the agent already has Bash access and can run any command directly. Keeping it simple means:
+MCP adds a protocol layer between the agent and the tools. Nilsson doesn't need it — the agent already has Bash access and can run any command directly. Keeping it simple means:
 
 - Fewer moving parts to break
 - Tools are just `.py` files you can run yourself
 - No protocol versioning, no server lifecycle, no tool registration
-- Easy to debug: if a tool works in your terminal, it works in Imp
+- Easy to debug: if a tool works in your terminal, it works in Nilsson
 
 ## The four tabs
 
 ### Queue
 
-Your to-do list inside Imp. The agent (or workflows) can push items here when something needs your attention — a PR to review, an issue to triage, a deploy to approve. Each item has action buttons so you can resolve it in one click. Think of it as a lightweight inbox: things land here, you deal with them, they disappear.
+Your to-do list inside Nilsson. The agent (or workflows) can push items here when something needs your attention — a PR to review, an issue to triage, a deploy to approve. Each item has action buttons so you can resolve it in one click. Think of it as a lightweight inbox: things land here, you deal with them, they disappear.
 
 ### Chat
 
-A conversation with the AI agent (Foreman). You type what you want done — "list open bugs", "fix issue #12", "show me a burndown chart" — and the agent figures out which tools to run, writes code if needed, and streams the results back.
+A conversation with the AI agent (Nilsson). You type what you want done — "list open bugs", "fix issue #12", "show me a burndown chart" — and the agent figures out which tools to run, writes code if needed, and streams the results back.
 
-**History**: every chat is saved to `.imp/chats/` as JSON. The sidebar lists past chats so you can pick up where you left off. Old chats can be turned into GitHub issues before deleting, or "productized" into reusable tools and workflows via the P button.
+**History**: every chat is saved to `.nilsson/chats/` as JSON. The sidebar lists past chats so you can pick up where you left off. Old chats can be turned into GitHub issues before deleting, or "productized" into reusable tools and workflows via the P button.
 
 **Dashboard**: a collapsible panel on the right side of the chat. When the agent renders a chart (burndown, kanban, scatter, etc.) it appears here as an interactive HTML widget. Click any chart image in the chat to open it in the dashboard.
 
-**Snapshots**: the [+ Snapshot] button at the bottom of the chat saves a named restore point — like a game save. You can restore to any previous snapshot or turn one into a pull request. No git knowledge needed; Imp handles branches and commits behind the scenes.
+**Snapshots**: the [+ Snapshot] button at the bottom of the chat saves a named restore point — like a game save. You can restore to any previous snapshot or turn one into a pull request. No git knowledge needed; Nilsson handles branches and commits behind the scenes.
 
 ### Tools
 
@@ -81,7 +81,7 @@ A tool is a simple, fixed Python script that does one thing. Plain `.py` files u
 
 The Tools tab lets you browse, edit, test, and organize tools. You can also ask the agent to generate new tools from a description, or promote a one-off chat solution into a permanent tool via the P button.
 
-Tools are grouped by folder (`github/`, `render/`, `imp/`, etc.). Each group can have a README and tools can have workflow step templates (`.step.py`) so they plug into workflows.
+Tools are grouped by folder (`github/`, `render/`, `nilsson/`, etc.). Each group can have a README and tools can have workflow step templates (`.step.py`) so they plug into workflows.
 
 ### Workflows
 

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Imp</title>
-<link rel="stylesheet" href="/static/imp.css">
+<title>Nilsson</title>
+<link rel="stylesheet" href="/static/nilsson.css">
 <script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
 </head>
 <body>
@@ -17,9 +17,9 @@
   <div id="version" style="margin-left:auto;"></div>
   <script>
     fetch(location.origin + '/api/version').then(r => r.json()).then(d => {
-      document.getElementById('version').textContent = d.version ? 'Imp · ' + d.version : 'Imp';
+      document.getElementById('version').textContent = d.version ? 'Nilsson · ' + d.version : 'Nilsson';
     }).catch(() => {
-      document.getElementById('version').textContent = 'Imp';
+      document.getElementById('version').textContent = 'Nilsson';
     });
   </script>
 </div>
@@ -62,7 +62,7 @@
       <div id="messages"></div>
       <div id="input-area">
         <div id="input-row">
-          <textarea id="input" rows="1" placeholder="Ask Foreman..." onkeydown="onKey(event)"></textarea>
+          <textarea id="input" rows="1" placeholder="Ask Nilsson..." onkeydown="onKey(event)"></textarea>
           <button id="send-btn" onclick="send()">Send</button>
           <button id="stop-btn" onclick="stop()">Stop</button>
         </div>
@@ -93,11 +93,11 @@
 </div><!-- /app-body -->
 
 <!-- JS: load order matters — ui first (no deps), then features, then app (init) -->
-<script src="/static/imp-ui.js"></script>
-<script src="/static/imp-chat.js"></script>
-<script src="/static/imp-queue.js"></script>
-<script src="/static/imp-workflows.js"></script>
-<script src="/static/imp-tools.js"></script>
-<script src="/static/imp-app.js"></script>
+<script src="/static/nilsson-ui.js"></script>
+<script src="/static/nilsson-chat.js"></script>
+<script src="/static/nilsson-queue.js"></script>
+<script src="/static/nilsson-workflows.js"></script>
+<script src="/static/nilsson-tools.js"></script>
+<script src="/static/nilsson-app.js"></script>
 </body>
 </html>

@@ -18,14 +18,14 @@ design.
   results. Explicit methods (`chart`, `metric`, `list`, `text`, `table`);
   stdout is ignored. Used to build the grid-comparison message.
 - **Scenario session**: a saved bundle on disk at
-  `.imp/scenarios/<session_id>/` containing the LLM-generated
+  `.nilsson/scenarios/<session_id>/` containing the LLM-generated
   `scenarios.py`, the user's text descriptions, the last render
   result, and (optionally) a commit pointer.
 
 ## Session layout
 
 ```
-.imp/scenarios/
+.nilsson/scenarios/
   └── gantt-2026-04-15-abc123/
       ├── descriptions.txt     # one line per scenario; the human spec
       ├── scenarios.py          # LLM-generated; reproducibility contract
@@ -73,7 +73,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Optional
 
 ROOT = Path(__file__).resolve().parent.parent
-SESSIONS_DIR = ROOT / ".imp" / "scenarios"
+SESSIONS_DIR = ROOT / ".nilsson" / "scenarios"
 
 MAX_SCENARIOS = 5
 MIN_SCENARIOS = 2
@@ -994,7 +994,7 @@ def run_session(session_id: str, baseline: dict[str, Any]) -> list[Out]:
 def commit_session(session_id: str, choice_index: int, baseline: dict[str, Any]) -> dict[str, Any]:
     """Record a Stage 1 commit: which scenario the admin picked.
 
-    Does NOT modify `.imp/enriched.json` — commit is internal state
+    Does NOT modify `.nilsson/enriched.json` — commit is internal state
     used by `pipeline/render_chart.py` to compose the active scenario
     on subsequent renders. The separate "apply to project board" flow
     (out of scope for this issue) handles Stage 2.
@@ -1016,7 +1016,7 @@ def commit_session(session_id: str, choice_index: int, baseline: dict[str, Any])
     }
     (session_dir(session_id) / "committed.json").write_text(json.dumps(committed, indent=2))
     # Also pointer file so render_chart.py can find the active scenario
-    active_ptr = ROOT / ".imp" / "active_scenario.json"
+    active_ptr = ROOT / ".nilsson" / "active_scenario.json"
     active_ptr.parent.mkdir(parents=True, exist_ok=True)
     active_ptr.write_text(json.dumps({"session_id": session_id, "choice_index": choice_index}, indent=2))
     return committed
@@ -1026,7 +1026,7 @@ def close_session(session_id: str) -> None:
     """Close without committing. The session's files remain on disk
     (re-openable); just no `committed.json` is written and the active
     pointer is cleared if this session was the active one."""
-    active_ptr = ROOT / ".imp" / "active_scenario.json"
+    active_ptr = ROOT / ".nilsson" / "active_scenario.json"
     if active_ptr.exists():
         try:
             ptr = json.loads(active_ptr.read_text())
@@ -1070,7 +1070,7 @@ def list_sessions(limit: int = 20) -> list[dict[str, Any]]:
 
 def active_session() -> Optional[dict[str, Any]]:
     """Return the current committed scenario pointer, or None."""
-    ptr = ROOT / ".imp" / "active_scenario.json"
+    ptr = ROOT / ".nilsson" / "active_scenario.json"
     if not ptr.exists():
         return None
     try:
@@ -1139,7 +1139,7 @@ def get_generator_backend() -> GeneratorBackend:
 
 
 GENERATOR_SYSTEM_PROMPT = """\
-You generate Python scenario files for Imp's scenario-comparison system.
+You generate Python scenario files for Nilsson's scenario-comparison system.
 
 You will receive a numbered list of plain-English scenario descriptions.
 Your job is to emit ONE valid Python file that:
