@@ -12,9 +12,33 @@ cannot be used as executable names.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 from typing import Any
+
+
+def _is_loadable(path: Path) -> bool:
+    """True if the file parses. Defensive: a broken or half-written file
+    dropped into a tool folder must not poison the prompt for every other
+    tool. Replaces the syntax check the old registration step performed."""
+    try:
+        ast.parse(path.read_text(encoding="utf-8"))
+        return True
+    except (OSError, SyntaxError, ValueError):
+        return False
+
+
+def _file_meta(path: Path) -> dict[str, Any]:
+    """Best-effort metadata header for a file (type/canonical/origin)."""
+    try:
+        from server.tool_metadata import parse_file
+
+        return parse_file(path).as_dict()
+    except Exception:
+        return {"type": "tool", "canonical": False, "origin": None,
+                "inferred": True}
+
 
 _TOOLS_DIR = Path(__file__).parent
 _RESERVED_NAMES = frozenset({"new", "delete", "list", "run", "edit"})
@@ -44,15 +68,22 @@ def list_executables(tool_name: str) -> list[dict[str, Any]]:
     for path in sorted(d.glob("*.py")):
         if path.name == "__init__.py" or path.name.endswith(".step.py"):
             continue
+        # Defensive: never advertise a tool that does not parse.
+        if not _is_loadable(path):
+            continue
         name = path.stem
         # Check for matching .md config
         config_path = d / f"{name}.md"
         has_config = config_path.exists()
+        meta = _file_meta(path)
         results.append({
             "name": name,
             "script": str(path),
             "has_config": has_config,
             "config": str(config_path) if has_config else None,
+            "type": meta["type"],
+            "canonical": meta["canonical"],
+            "origin": meta["origin"],
         })
     return results
 
@@ -170,7 +201,14 @@ def build_tool_list_for_prompt(
 
         for e in list_executables(name):
             cfg = " (has config)" if e["has_config"] else ""
-            lines.append(f"- `{e['name']}`{cfg}")
+            tags = []
+            if e.get("canonical"):
+                tags.append("canonical")
+            etype = e.get("type")
+            if etype and etype != "tool":
+                tags.append(etype)
+            tag = f" [{', '.join(tags)}]" if tags else ""
+            lines.append(f"- `{e['name']}`{cfg}{tag}")
         lines.append("")
 
     return "\n".join(lines)

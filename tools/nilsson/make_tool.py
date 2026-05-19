@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Register a new tool locally.
+"""Validate a new tool locally (registration no longer required).
+
+DEPRECATED: the server now auto-discovers tools via a background scanner
+(server/tool_watcher.py) — just drop a valid .py into a tools/<group>/
+folder and it becomes available within ~2 poll cycles. This script is kept
+only as an optional syntax/README helper; it no longer "registers" anything.
 
 Inputs:
   --group: str — tool group folder (e.g. "github", "render", "nilsson")
@@ -7,13 +12,12 @@ Inputs:
 
 Process:
   1. Verifies tools/<group>/<name>.py exists and is valid Python
-  2. Reloads the Nilsson tool list so the new tool is immediately available
+  2. Updates the group README table (cosmetic only)
 
 Output: Prints confirmation. Use publish_pr.py to push to GitHub."""
 
 import argparse
 import ast
-import subprocess
 import sys
 from pathlib import Path
 
@@ -88,15 +92,12 @@ def main():
         # Create README
         readme_path.write_text(f"# {args.group}\n\n## Tools\n\n| Script | Purpose | Key Arguments |\n|---|---|---|\n{table_row}\n")
 
-    # Reload Nilsson prompt
-    subprocess.run(
-        [sys.executable, "tools/nilsson/reload_tools.py"],
-        capture_output=True, cwd=str(ROOT),
-    )
-
-    print(f"Tool registered: tools/{args.group}/{args.name}.py")
+    # NOTE: no reload needed — server/tool_watcher.py auto-discovers this
+    # file on its next poll. Registration is no longer a step.
+    print(f"Tool validated: tools/{args.group}/{args.name}.py")
     print(f"Description: {first_line}")
     print(f"README updated: tools/{args.group}/README.md")
+    print("Auto-discovered by the scanner — no registration/reload needed.")
     print(f"\nTo publish to GitHub: python tools/nilsson/publish_pr.py --path tools/{args.group}/ --title \"...\"")
     return 0
 
