@@ -64,11 +64,12 @@ python tools/nilsson/list_tools.py --group github
 # List all tools with descriptions
 python tools/nilsson/list_tools.py --verbose
 
-# Create a tool (after writing the .py file)
-python tools/nilsson/make_tool.py --group github --name my_tool --title "Add my_tool"
+# (Optional) validate a tool after writing the .py file —
+# the scanner already auto-loads it; this just checks syntax + README.
+python tools/nilsson/make_tool.py --group github --name my_tool
 
-# Create a workflow (after writing step files)
-python tools/nilsson/make_workflow.py --name daily_report --title "Add daily report workflow"
+# (Optional) validate a workflow's step files
+python tools/nilsson/make_workflow.py --name daily_report
 
 # Check what Nilsson updates are available (no changes applied)
 python tools/nilsson/sync_upstream.py --dry-run
