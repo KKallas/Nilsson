@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Register a new workflow locally.
+"""Validate a new workflow locally (registration no longer required).
+
+DEPRECATED: the server now auto-discovers workflows via a background
+scanner (server/tool_watcher.py) — just drop step files into
+workflows/<name>/ and they become available within ~2 poll cycles. This
+script is kept only as an optional validation helper.
 
 Inputs:
   --name: str — workflow name (e.g. "daily_report")
@@ -7,13 +12,11 @@ Inputs:
 Process:
   1. Verifies workflows/<name>/ exists with step files
   2. Validates each step file has a run(context) function
-  3. Reloads the Nilsson tool list
 
 Output: Prints confirmation. Use publish_pr.py to push to GitHub."""
 
 import argparse
 import ast
-import subprocess
 import sys
 from pathlib import Path
 
@@ -50,16 +53,13 @@ def main():
         if not has_run:
             print(f"Warning: {step.name} has no run(context) function.", file=sys.stderr)
 
-    # Reload Nilsson prompt
-    subprocess.run(
-        [sys.executable, "tools/nilsson/reload_tools.py"],
-        capture_output=True, cwd=str(ROOT),
-    )
-
-    print(f"Workflow registered: workflows/{args.name}/ ({len(steps)} steps)")
+    # NOTE: no reload needed — server/tool_watcher.py auto-discovers these
+    # step files on its next poll. Registration is no longer a step.
+    print(f"Workflow validated: workflows/{args.name}/ ({len(steps)} steps)")
     for s in steps:
         doc = ast.get_docstring(ast.parse(s.read_text())) or "(no description)"
         print(f"  {s.name}: {doc.split(chr(10))[0]}")
+    print("Auto-discovered by the scanner — no registration/reload needed.")
     print(f"\nTo publish to GitHub: python tools/nilsson/publish_pr.py --path workflows/{args.name}/ --title \"...\"")
     return 0
 

@@ -54,6 +54,12 @@ async def _lifespan(app):
         await workflows.resume_paused_async()
     except Exception as exc:
         print(f"[render] workflow resume failed: {exc}", file=sys.stderr)
+    # Startup: auto-scan tools/ and workflows/ — no manual reload/registration
+    try:
+        from server.tool_watcher import start_watcher
+        start_watcher()
+    except Exception as exc:
+        print(f"[render] tool watcher start failed: {exc}", file=sys.stderr)
     yield
 
 app = FastAPI(title="Nilsson Render Server", docs_url=None, redoc_url=None, lifespan=_lifespan)

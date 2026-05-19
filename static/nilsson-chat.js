@@ -122,10 +122,16 @@ function formatStepOutput(text) {
 }
 
 // --- messages ---
+function roleLabel(role) {
+  if (role === 'user') return 'You';
+  if (role === 'agent') return 'Nilsson';
+  return role;
+}
+
 function addMessage(role, content) {
   const el = document.createElement('div');
   el.className = `msg ${role}`;
-  el.innerHTML = `<div class="role">${role}</div><div class="body">${renderMd(content)}</div>`;
+  el.innerHTML = `<div class="role">${roleLabel(role)}</div><div class="body">${renderMd(content)}</div>`;
   document.getElementById('messages').appendChild(el);
   nilsson.highlightAll(el);
   scrollBottom();
