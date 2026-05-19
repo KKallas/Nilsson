@@ -4,7 +4,7 @@
 Inputs:
   --files: str (repeatable) — files to push (relative paths, e.g. "server/render_route.py").
   --message: str — commit message / PR title.
-  --repo: str — upstream Nilsson repo (default: read from .nilsson/upstream.json, or "KKallas/Imp").
+  --repo: str — upstream Nilsson repo (default: read from .nilsson/upstream.json, or "KKallas/Nilsson").
 
 Process:
   1. Clones the upstream Nilsson repo to a temp directory
@@ -16,6 +16,7 @@ Output: Prints the PR URL."""
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -27,7 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 PROJECT_DIR = Path(os.environ.get("NILSSON_PROJECT_DIR", str(ROOT)))
 UPSTREAM_JSON = PROJECT_DIR / ".nilsson" / "upstream.json"
 
-DEFAULT_REPO = "KKallas/Imp"
+DEFAULT_REPO = "KKallas/Nilsson"
 
 
 def run(cmd, **kwargs):
