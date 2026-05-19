@@ -1,0 +1,15 @@
+{
+  "_comment": "Example .nilsson/config.json `project` descriptor (issue #9). Copy the `project` block into your project's .nilsson/config.json. This is the minesweeper-arena worked example: a separate server Nilsson starts but does not mount in-process.",
+
+  "project": {
+    "start": ["python", "app.py"],
+    "port": 7700,
+    "target": "local",
+
+    "_remote_example": "Set target to 'remote' and fill remote.url to serve it elsewhere; `preview` pushes the `preview` branch and runs remote.sync so you see changes before a PR.",
+    "remote": {
+      "url": "https://your-host.example.com",
+      "sync": ["ssh", "you@your-host", "cd minesweeper-arena && git fetch origin && git checkout -B preview origin/preview && sudo systemctl restart minesweeper"]
+    }
+  }
+}

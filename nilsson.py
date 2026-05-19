@@ -204,6 +204,14 @@ def ensure_dependencies() -> None:
 # ---------- server launch ----------
 
 def start_server() -> None:
+    # Security invariant: the control plane (agent + admin/authoring) must
+    # answer loopback only. Refuse to start otherwise. The project server
+    # is a separate process and is free to bind LAN/public on its own.
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from server.netguard import enforce_loopback
+    enforce_loopback(HOST)
+
     print(f"\nStarting Nilsson at http://{HOST}:{PORT}", flush=True)
     print("Ctrl+C to stop.\n", flush=True)
 
