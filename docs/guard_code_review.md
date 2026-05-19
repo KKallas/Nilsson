@@ -124,7 +124,7 @@ For each proposed code action, Guard asks:
 
 3. **Is the side effect proportional to the request?** Reading data is
    cheap; writing files in `.nilsson/output/` is fine; writing files at the
-   repo root or under `99-tools/` is suspicious unless the admin
+   repo root or into `server/`/`tools/` core is suspicious unless the admin
    explicitly asked.
 
 A scope-check rejection isn't "this is malicious" — it's "this is
