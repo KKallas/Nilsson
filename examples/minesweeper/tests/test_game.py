@@ -1,0 +1,130 @@
+"""Tests for game.py — plain asserts, no pytest (run: python tests/test_game.py).
+
+Exit 0 = all pass, exit 1 = failure. Mirrors the Nilsson test style so this
+project doubles as a tutorial.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from game import Game, BOOM, MARK, FLIP  # noqa: E402
+
+fails: list[str] = []
+
+
+def ok(name, cond):
+    print(("PASS " if cond else "FAIL ") + name)
+    if not cond:
+        fails.append(name)
+
+
+def fresh():
+    g = Game(8, 8, 10, powerups=3, seed=42)
+    g.add_player("A", "Alice")
+    g.add_player("B", "Bob")
+    return g
+
+
+def mines(g):
+    return [(r, c) for r in range(g.h) for c in range(g.w) if g.grid[r][c].mine]
+
+
+def safe0(g):  # a safe, 0-adjacent cell
+    for r in range(g.h):
+        for c in range(g.w):
+            if not g.grid[r][c].mine and g.grid[r][c].adj == 0:
+                return r, c
+
+
+g = fresh()
+ok("two players -> playing", g.status == "playing")
+ok("mine count exact", len(mines(g)) == 10)
+
+# adjacency recomputed independently
+good = True
+for r in range(g.h):
+    for c in range(g.w):
+        if not g.grid[r][c].mine:
+            exp = sum(g.grid[nr][nc].mine for nr, nc in g._around(r, c))
+            good &= g.grid[r][c].adj == exp
+ok("adjacency correct", good)
+
+# powerups only under safe, 0-adjacency cells
+pcells = [(r, c) for r in range(g.h) for c in range(g.w) if g.grid[r][c].powerup]
+ok("powerups placed", len(pcells) == 3)
+ok("powerups on empty safe cells",
+   all(not g.grid[r][c].mine and g.grid[r][c].adj == 0 for r, c in pcells))
+
+# pending + opponent veto
+r, c = safe0(g)
+g.click("A", r, c)
+ok("click creates pending", (r, c) in g.pending and g.pending[(r, c)]["by"] == "A")
+g.click("A", r, c)
+ok("cannot veto own pending", (r, c) in g.pending)
+g.click("B", r, c)
+ok("opponent veto aborts", (r, c) not in g.pending and (r, c) not in g.revealed)
+
+# resolve a safe 0-cell -> floods (reveals more than one)
+g.click("A", r, c)
+g.resolve_pending(r, c)
+ok("safe resolve reveals", (r, c) in g.revealed)
+ok("zero-cell floods", len(g.revealed) > 1)
+
+# sudden death on mine
+g2 = fresh()
+mr, mc = mines(g2)[0]
+g2.click("A", mr, mc)
+g2.resolve_pending(mr, mc)
+ok("mine = sudden death over", g2.status == "over")
+ok("opener loses, other wins", g2.winner == "B")
+
+# flag scoring + finish
+g3 = fresh()
+for (mr, mc) in mines(g3)[:3]:
+    g3.flag("A", mr, mc)
+ok("correct flags score live", g3.live_score("A") == 3)
+g3._finish_by_score()
+ok("finish picks higher score", g3.winner == "A" and g3.status == "over")
+
+# MARK power-up: flags every mine in 3x3 for the user, and scores
+g4 = fresh()
+mr, mc = mines(g4)[0]
+g4.players["A"].powerups.append(MARK)
+g4.arm("A", MARK)
+ok("arm sets armed", g4.players["A"].armed == MARK)
+g4.click("A", mr, mc)                       # armed -> uses power-up
+ok("MARK flagged the mine for A", g4.flags.get((mr, mc)) == "A")
+ok("MARK consumed", MARK not in g4.players["A"].powerups
+   and g4.players["A"].armed == 0)
+
+# FLIP power-up: steals an opponent's flag
+g5 = fresh()
+fr, fc = mines(g5)[0]
+g5.flag("B", fr, fc)
+g5.players["A"].powerups.append(FLIP)
+g5.arm("A", FLIP)
+g5.click("A", fr, fc)
+ok("FLIP steals opponent flag", g5.flags.get((fr, fc)) == "A")
+
+# BOOM power-up: peeks a 3x3 (mines visible, no sudden death)
+g6 = fresh()
+br, bc = mines(g6)[0]
+g6.players["A"].powerups.append(BOOM)
+g6.arm("A", BOOM)
+g6.click("A", br, bc)
+ok("BOOM peeks, no death", g6.status == "playing" and (br, bc) in g6.peeked)
+ok("BOOM view shows mine", g6.view("A")["cells"][br][bc]["s"] == "mine")
+
+# board clear -> ends by score
+g7 = fresh()
+for rr in range(g7.h):
+    for cc in range(g7.w):
+        if not g7.grid[rr][cc].mine:
+            g7.revealed.add((rr, cc))
+g7._check_clear()
+ok("all safe revealed ends match", g7.status == "over")
+
+if fails:
+    print(f"\n{len(fails)} failed: {fails}")
+    sys.exit(1)
+print("\nAll game tests passed.")

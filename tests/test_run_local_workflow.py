@@ -49,13 +49,21 @@ def with_dir(cfg: dict | None = None) -> Path:
 
 
 orig_cwd = Path.cwd()
-# server.paths.PROJECT_DIR is read at import time; reset it per test.
+# server.paths.PROJECT_DIR + NILSSON_DIR are module attributes; reset per test.
 import server.paths as _paths                                  # noqa: E402
 _orig_project_dir = _paths.PROJECT_DIR
+_orig_nilsson_dir = _paths.NILSSON_DIR
 
 
 def point_project_at(d: Path) -> None:
     _paths.PROJECT_DIR = d
+
+
+def hide_bundled_default(d: Path) -> None:
+    """Point NILSSON_DIR at an empty dir so the bundled minesweeper
+    auto-default does NOT fire — for tests that need the raw 'no
+    descriptor + no bundle' path."""
+    _paths.NILSSON_DIR = d
 
 
 try:
@@ -64,14 +72,19 @@ try:
 
     # --- step_1 refusals (none of these should launch a subprocess) ----
 
-    # absent descriptor → fail cleanly
+    # absent descriptor AND no bundled default → fail cleanly. (When the
+    # bundled minesweeper is present the auto-default would step in and
+    # launch it instead; that path is verified by test_default_project.)
     d = with_dir(None)
+    nd = with_dir(None)                                 # empty NILSSON_DIR
     point_project_at(d)
+    hide_bundled_default(nd)
     os.chdir(d)
     r = step1.run({})
-    ok("no descriptor -> fail", r["ok"] is False
+    ok("no descriptor + no bundle -> fail", r["ok"] is False
        and "no `project` block" in r["error"])
-    ok("no descriptor -> no pause", not r.get("pause"))
+    ok("no descriptor + no bundle -> no pause", not r.get("pause"))
+    _paths.NILSSON_DIR = _orig_nilsson_dir              # restore for next tests
 
     # target=remote → refuse (this workflow is run_local)
     d = with_dir({"project": {"start": ["python", "-V"], "target": "remote",
@@ -115,6 +128,7 @@ try:
 finally:
     os.chdir(orig_cwd)
     _paths.PROJECT_DIR = _orig_project_dir
+    _paths.NILSSON_DIR = _orig_nilsson_dir
     os.environ.pop("NILSSON_PROJECT_DIR", None)
     os.environ.pop("RENDER_PORT", None)
     for d in tmps:

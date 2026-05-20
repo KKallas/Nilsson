@@ -1,5 +1,5 @@
 {
-  "_comment": "Example .nilsson/config.json `project` descriptor (issue #9). Copy the `project` block into your project's .nilsson/config.json. Used by the workflows/run_local/ workflow (and future run_remote/preview workflows). Pick a `port` that is NOT Nilsson's port — the run_local workflow refuses on collision.",
+  "_comment": "Example .nilsson/config.json `project` descriptor (issue #9). Copy the `project` block into your project's .nilsson/config.json to replace the default. When this block is absent, Nilsson auto-defaults to the bundled minesweeper at examples/minesweeper/ (so a fresh boot serves a working game on :7700 — replace by adding the block below). Pick a `port` that is NOT Nilsson's port — the run_local workflow refuses on collision.",
 
   "project": {
     "start": ["python", "app.py"],

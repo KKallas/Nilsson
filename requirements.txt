@@ -7,3 +7,6 @@ websockets
 fastapi
 jinja2
 keyring>=25
+# For the bundled default project (examples/minesweeper/)
+python-multipart
+segno
