@@ -34,10 +34,15 @@ def D(cfg: object | None) -> Path:
 
 
 try:
-    r = load_project_server(D(None))
+    # auto_default=False here, because in this repo the bundled minesweeper
+    # exists at examples/minesweeper/app.py and the auto-default path would
+    # otherwise return its spec (which is covered separately in
+    # test_default_project.py). The descriptor parser's own contract is
+    # what these cases assert.
+    r = load_project_server(D(None), auto_default=False)
     ok("no config -> absent", r.absent and not r.ok and r.error is None)
 
-    r = load_project_server(D({"llm": {"model": "x"}}))
+    r = load_project_server(D({"llm": {"model": "x"}}), auto_default=False)
     ok("no project block -> absent", r.absent)
 
     r = load_project_server(D("{not json"))

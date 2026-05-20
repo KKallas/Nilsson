@@ -37,11 +37,16 @@ string. Same discipline as the P1 tool scanner.
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
 VALID_TARGETS = ("local", "remote")
+# Bundled default starter project, used when no `project` block is configured.
+# Lives in Nilsson's own tree so it's always there until the user replaces it.
+_BUNDLED_DEFAULT_REL = ("examples", "minesweeper", "app.py")
+_BUNDLED_DEFAULT_PORT = 7700
 
 
 @dataclass(frozen=True)
@@ -81,14 +86,56 @@ def _argv(v: Any) -> Optional[list[str]]:
     return None
 
 
-def load_project_server(project_dir: Path | str | None = None) -> Result:
-    """Read + validate the ``project`` descriptor. Never raises."""
+def _bundled_default(cfg_source: Path) -> Optional[ProjectServer]:
+    """Synthesize the spec for the bundled default project (minesweeper).
+
+    Returns None if the bundle is missing (e.g., a stripped install). The
+    bundle lives in Nilsson's own tree, so it's always there until you
+    replace it with your own ``project`` block.
+    """
+    try:
+        from server.paths import NILSSON_DIR
+    except Exception:
+        return None
+    app = NILSSON_DIR.joinpath(*_BUNDLED_DEFAULT_REL)
+    if not app.exists():
+        return None
+    return ProjectServer(
+        start=[sys.executable, str(app)],
+        init=None,
+        port=_BUNDLED_DEFAULT_PORT,
+        target="local",
+        remote_url=None,
+        remote_sync=None,
+        source=cfg_source,
+    )
+
+
+def load_project_server(
+    project_dir: Path | str | None = None,
+    *,
+    auto_default: bool = True,
+) -> Result:
+    """Read + validate the ``project`` descriptor. Never raises.
+
+    When ``auto_default`` is True (the default) and no ``project`` block is
+    configured, fall back to the bundled minesweeper at
+    ``NILSSON_DIR/examples/minesweeper/`` — Nilsson always ships *something*
+    you can replace. Pass ``auto_default=False`` to get the raw "absent"
+    behavior (tests use this).
+    """
     if project_dir is None:
         from server.paths import PROJECT_DIR as project_dir  # lazy
     cfg_path = Path(project_dir) / ".nilsson" / "config.json"
 
+    def _absent() -> Result:
+        if not auto_default:
+            return Result(None, None)
+        spec = _bundled_default(cfg_path)
+        return Result(spec, None) if spec else Result(None, None)
+
     if not cfg_path.exists():
-        return Result(None, None)  # absent — fine
+        return _absent()
     try:
         cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -98,7 +145,7 @@ def load_project_server(project_dir: Path | str | None = None) -> Result:
 
     proj = cfg.get("project")
     if proj is None:
-        return Result(None, None)  # no server in this project — fine
+        return _absent()
     if not isinstance(proj, dict):
         return Result(None, "`project` must be an object")
 
