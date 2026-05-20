@@ -1,0 +1,15 @@
+{
+  "_comment": "Example .nilsson/config.json `project` descriptor (issue #9). Copy the `project` block into your project's .nilsson/config.json. Used by the workflows/run_local/ workflow (and future run_remote/preview workflows). Pick a `port` that is NOT Nilsson's port — the run_local workflow refuses on collision.",
+
+  "project": {
+    "start": ["python", "app.py"],
+    "port": 7700,
+    "target": "local",
+
+    "_remote_example": "Set target to 'remote' and fill remote.url to serve it elsewhere. A future run_remote workflow will use remote.sync as a pluggable preview hook.",
+    "remote": {
+      "url": "https://your-host.example.com",
+      "sync": ["ssh", "you@your-host", "cd app && git fetch origin && git checkout -B preview origin/preview && sudo systemctl restart app"]
+    }
+  }
+}
