@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -33,6 +35,31 @@ def _nilsson_port() -> int:
 
 def _fail(msg: str) -> dict:
     return {"ok": False, "error": msg, "output": msg}
+
+
+def _embed_in_dashboard(nilsson_port: int, title: str = "Project") -> str | None:
+    """Push an iframe widget pointing at the project URL to the dashboard.
+
+    Defensive: failures (missing render tool, subprocess error, no parseable
+    output) downgrade silently to None — the project still runs; the queue
+    popup just won't have a one-click "Open in dashboard" link. The agent
+    can always invoke the render tool manually later (issue #14)."""
+    try:
+        from server.paths import NILSSON_DIR
+        embed = NILSSON_DIR / "tools" / "render" / "embed_project.py"
+        if not embed.exists():
+            return None
+        proc = subprocess.run(
+            [sys.executable, str(embed), "--port", str(nilsson_port),
+             "--title", title],
+            capture_output=True, text=True, timeout=10,
+        )
+        if proc.returncode != 0:
+            return None
+        m = re.search(r"\[Open in dashboard\]\(([^)]+)\)", proc.stdout)
+        return m.group(1) if m else None
+    except Exception:
+        return None
 
 
 def run(context):
@@ -78,6 +105,21 @@ def run(context):
         "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }, indent=2))
 
+    # Issue #14: auto-embed the served project in the dashboard so LLM-driven
+    # iteration shows up right next to the chat. Best-effort; the workflow
+    # itself doesn't fail if the embed step does.
+    dashboard_url = _embed_in_dashboard(nilsson_port, "Project")
+    dashboard_btn = ""
+    if dashboard_url:
+        dashboard_btn = (
+            f"<p style=\"margin:8px 0 12px;\"><a href=\"#\" "
+            f"onclick=\"event.preventDefault();loadInDashboard('{dashboard_url}')\" "
+            "style=\"display:inline-block;padding:8px 20px;background:#21262d;"
+            "color:#c9d1d9;border:1px solid #30363d;border-radius:6px;"
+            "text-decoration:none;font-weight:600;font-size:14px;\">"
+            "View in dashboard</a></p>"
+        )
+
     return {
         "ok": True,
         "pause": True,
@@ -90,6 +132,7 @@ def run(context):
             "style=\"display:inline-block;padding:8px 20px;background:#58a6ff;"
             "color:#fff;border-radius:6px;text-decoration:none;"
             f"font-weight:600;font-size:14px;\">Open {url}</a></p>"
+            f"{dashboard_btn}"
             "<p style=\"font-size:13px;color:#8b949e;\">Nilsson stays on its "
             "own port (loopback). Click <b>Stop</b> to terminate.</p>"
         ),
