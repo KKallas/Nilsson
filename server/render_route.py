@@ -2391,6 +2391,10 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args()
 
+    # Control plane = loopback only (the agent must never be network-exposed).
+    from server.netguard import enforce_loopback
+    enforce_loopback(args.host)
+
     print(f"[render] starting on http://{args.host}:{args.port}")
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 
