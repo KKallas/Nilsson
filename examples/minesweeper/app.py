@@ -236,6 +236,14 @@ async def ws(sock: WebSocket):
                 GAME.flag(pid, int(msg["r"]), int(msg["c"]))
             elif t == "arm":
                 GAME.arm(pid, int(msg["k"]))
+            elif t == "new_match":
+                # Allowed only when the current match is over (guarded in
+                # Game.new_match). Cancel any pending timers from the
+                # previous match so they don't fire onto the new board.
+                if GAME.new_match():
+                    for task in _pending_tasks.values():
+                        task.cancel()
+                    _pending_tasks.clear()
             await broadcast()
     except WebSocketDisconnect:
         SOCKETS.pop(sock, None)

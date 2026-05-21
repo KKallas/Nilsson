@@ -7,9 +7,11 @@ plain asserts (see tests/test_game.py).
 Rules (locked):
 - 1v1 on a shared board. Flags are instant, owned, and final — they cannot
   be challenged. Your score = flags you placed that sit on a mine.
-- Opening a cell is a 5s *pending* action. The OTHER player may click that
-  pending cell to **veto** it (abort, cell stays closed, no score). You
-  cannot veto your own. (Timing is handled by app.py.)
+- Opening a cell is a 5s *pending* action. **Anyone** (you or the
+  opponent) can click that pending cell to **cancel** it (abort, cell
+  stays closed, no score) — opponent-veto for tactical pressure,
+  self-cancel for mistake-fixing, and it makes solo play work the same
+  way as multi. (Timing is handled by app.py.)
 - Sudden death: if a pending open resolves onto a mine, the match ends
   immediately and the other player wins. If instead every safe cell is
   opened (or every mine flagged), the match ends and the higher correct-flag
@@ -98,10 +100,23 @@ class Game:
         return True
 
     def is_solo(self) -> bool:
-        """True while only one player is seated. With no opponent there's
-        nobody to veto an open, so solo clicks resolve immediately —
-        otherwise every click would dead-air for 5s."""
+        """True while only one player is seated. Solo plays under the same
+        5s pending mechanic as multi — the player can cancel their own
+        pending (self-cancel) just as either player can in 1v1."""
         return len(self.players) == 1
+
+    def new_match(self) -> bool:
+        """Reset the board (new mines + power-ups) for a fresh round while
+        keeping the seated players. Only allowed once the current match is
+        ``over`` so mid-game players can't grief each other. Returns True
+        when a reset happened, False otherwise."""
+        if self.status != "over":
+            return False
+        saved = [(p.pid, p.name) for p in self.players.values()]
+        self.reset(self.w, self.h, self.n_mines)        # clears players too
+        for pid, name in saved:
+            self.add_player(pid, name)
+        return True
 
     def _other(self, pid: str) -> str | None:
         for q in self.players:
@@ -128,21 +143,12 @@ class Game:
             return
         key = (r, c)
         if key in self.pending:
-            # clicking a pending cell = veto, but only the opponent's
-            if self.pending[key]["by"] != pid:
-                del self.pending[key]            # abort, no score
+            # Anyone can cancel any pending — self-cancel + opponent-veto
+            # are the same operation. Makes solo play work and lets you
+            # fix a misclick in multi too.
+            del self.pending[key]                   # abort, no score
             return
         if key in self.revealed or key in self.flags:
-            return
-        if self.is_solo():
-            # No opponent → no possible veto → no point waiting 5s.
-            # Resolve inline (sudden death on mine, flood-reveal otherwise).
-            if self.grid[r][c].mine:
-                self.status = "over"
-                self.winner = None                  # solo loss; UI: "You lose"
-            else:
-                self._open(pid, r, c)
-                self._check_clear()
             return
         self.pending[key] = {"by": pid, "deadline": time.time() + PENDING_SECONDS}
 

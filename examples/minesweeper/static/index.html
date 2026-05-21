@@ -28,6 +28,10 @@
   #flagbtn{padding:10px 18px;border:0;border-radius:8px;font-size:15px;
      font-weight:700;cursor:pointer;background:#21262d;color:#c9d1d9;margin:6px}
   #flagbtn.on{background:#1f6feb;color:#fff}
+  #newgame{margin:8px;display:none}
+  #newgame button{padding:10px 22px;border:0;border-radius:8px;font-size:15px;
+     font-weight:700;cursor:pointer;background:#3fb950;color:#fff}
+  #newgame button:hover{filter:brightness(1.1)}
   input,#name button{padding:8px;border-radius:6px;border:1px solid #30363d;
      background:#161b22;color:#c9d1d9}
   a{color:#58a6ff}
@@ -42,6 +46,7 @@
 </div>
 <div id="scores"></div>
 <div id="bar"></div>
+<div id="newgame"><button onclick="newGame()">🔁 New game</button></div>
 <div id="pw"></div>
 <div><button id="flagbtn" onclick="toggleFlag()">🚩 Flag mode: OFF</button></div>
 <div id="board"></div>
@@ -63,6 +68,7 @@ function join(){
   document.getElementById('name').style.display = 'none';
 }
 function arm(k){ send({t:'arm', k}); }
+function newGame(){ send({t:'new_match'}); }
 
 function render(){
   if(!S) return;
@@ -77,12 +83,14 @@ function render(){
     (S.winner===S.you ? '🏆 You win!' : '💥 You lose.');
   else if(S.armed) bar = `Power-up armed (${S.powerup_names[S.armed]}) — your next tap uses it.`;
   else if(flagMode) bar = 'FLAG mode — tap a box to flag/unflag (instant, final).';
-  else if(S.players.length < 2) bar = 'Solo — opens are instant. Share the QR for a 2nd player to enable the 5s veto.';
-  else bar = 'Tap a box to open (5s; opponent can tap it to cancel).';
+  else if(S.players.length < 2) bar = 'Solo — tap to open (5s; tap the pending cell to cancel).';
+  else bar = "Tap to open (5s; tap pending to cancel — yours or opponent's).";
   document.getElementById('bar').textContent = bar;
   const fb = document.getElementById('flagbtn');
   fb.textContent = '🚩 Flag mode: ' + (flagMode ? 'ON' : 'OFF');
   fb.className = flagMode ? 'on' : '';
+  document.getElementById('newgame').style.display =
+    (S.status === 'over') ? '' : 'none';
   // power-ups
   const counts = {};
   S.powerups.forEach(k => counts[k]=(counts[k]||0)+1);
