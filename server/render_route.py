@@ -879,6 +879,23 @@ async def list_queue():
     return queue.list_pending()
 
 
+@app.get("/api/dashboard/active")
+async def dashboard_active():
+    """The widget URL the show_dashboard workflow last pushed, or null.
+
+    The chat UI fetches this on page-load and auto-opens the widget into
+    the dashboard drawer — so reloading the page restores what you were
+    looking at, no extra click. Cleared by show_dashboard step_2 (Stop)."""
+    from server.paths import PROJECT_DIR
+    p = PROJECT_DIR / ".nilsson" / "dashboard_active.json"
+    if not p.exists():
+        return {"url": None}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"url": None}
+
+
 @app.post("/api/queue")
 async def add_to_queue(request: Request):
     from server import work_queue as queue

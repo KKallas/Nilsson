@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 
 SESSION_FILE = Path(".nilsson/run_local.json")
+ACTIVE_FILE = Path(".nilsson/dashboard_active.json")
 _WAIT_FOR_SESSION_S = 3.0          # autostart race window with run_local
 _WAIT_TICK_S = 0.1
 
@@ -84,6 +85,16 @@ def run(context):
     dashboard_url = _invoke_embed(nilsson_port, "Project")
     if dashboard_url is None:
         return _fail("embed_project failed — no dashboard widget pushed.")
+
+    # Mark the active dashboard widget so the chat UI can auto-load it on
+    # page reload (no extra click). step_2 clears this marker; reload
+    # while inactive ⇒ no auto-load. Best-effort — purely UX.
+    try:
+        ACTIVE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        ACTIVE_FILE.write_text(json.dumps(
+            {"url": dashboard_url, "project_url": project_url}, indent=2))
+    except OSError:
+        pass
 
     return {
         "ok": True,

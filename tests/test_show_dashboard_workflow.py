@@ -78,9 +78,24 @@ try:
     artifacts = list((d / "public" / "charts").glob("*.html"))
     ok("happy -> embed wrote a widget artifact", len(artifacts) == 1)
 
-    # 4. step_2 is a clean no-op.
+    # Active-marker is written so the chat UI can auto-load on reload.
+    active = d / ".nilsson" / "dashboard_active.json"
+    ok("happy -> dashboard_active.json written", active.exists())
+    if active.exists():
+        cfg = json.loads(active.read_text())
+        ok("happy -> marker holds the dashboard widget URL",
+           isinstance(cfg.get("url"), str) and "/public/charts/" in cfg["url"])
+        ok("happy -> marker also records the project URL",
+           cfg.get("project_url") == "http://127.0.0.1:7700")
+
+    # 4. step_2: clean message AND clears the active marker (so reload
+    #    after Stop does NOT auto-load anything).
     r = step2.run({})
     ok("step_2 ok message", r["ok"] and "Dashboard view ended" in r["output"])
+    ok("step_2 removes dashboard_active.json", not active.exists())
+    # Idempotent: calling step_2 again with no marker is fine.
+    r = step2.run({})
+    ok("step_2 no-marker -> still ok", r["ok"])
 finally:
     os.chdir(orig_cwd)
     for d in tmps:
