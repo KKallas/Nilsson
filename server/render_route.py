@@ -66,10 +66,17 @@ async def _lifespan(app):
     # falling back to [run_local, show_dashboard] when a project is
     # loadable. Replaces the previous hard-coded "always start run_local"
     # so orchestration stays declarative in config, not in core.
+    #
+    # workflows.reset() first so the previous Nilsson run's paused state
+    # doesn't suppress a fresh start_1 (otherwise the queue item would
+    # linger but the project server wouldn't actually be running).
+    # step_1's Fix B then reconnects to any orphaned subprocess instead
+    # of double-spawning.
     try:
         from tools.nilsson._autostart import compute_autostart
         import workflows
         for _wf_name in compute_autostart():
+            workflows.reset(_wf_name)
             workflows.start(_wf_name)
     except Exception as exc:
         print(f"[render] autostart failed: {exc}", file=sys.stderr)

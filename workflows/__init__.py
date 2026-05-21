@@ -258,6 +258,40 @@ def start(name: str) -> WorkflowRunner | None:
     return runner
 
 
+def reset(name: str) -> None:
+    """Discard a workflow's persisted state + in-memory runner + queue items.
+
+    So the next ``start(name)`` truly launches fresh from step_1 instead of
+    restoring whatever paused state survived a Nilsson restart. Used by
+    autostart: "autostart" should mean "start fresh on boot," not "restore
+    the last paused queue item without ever re-running step_1." Never raises.
+    """
+    runner = _runners.pop(name, None)
+    if runner is not None:
+        try:
+            runner.abort()                        # unblock any wait task
+        except Exception:
+            pass
+    log_path = _WORKFLOWS_DIR / name / "last_run.json"
+    if log_path.exists():
+        try:
+            log_path.unlink()
+        except OSError:
+            pass
+    # Clear any leftover queue items for this workflow.
+    try:
+        from server import work_queue
+        tool_key = f"workflow:{name}"
+        for item in list(work_queue.list_pending()):
+            if item.get("tool") == tool_key:
+                try:
+                    work_queue.remove(item.get("id"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 def resume_interrupted() -> None:
     """On server startup, resume any workflows that were paused or running.
 
