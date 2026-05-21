@@ -100,3 +100,9 @@ queuePollInterval = setInterval(() => { if (activeTab === 'queue') loadQueue(); 
 fetch(`${API}/api/setup-status`).then(r => r.json()).then(d => {
   if (!d.complete) lockTabsForSetup();
 }).catch(() => {});
+
+// Restore the dashboard view if show_dashboard is active — saves the
+// extra "View in dashboard" click on every page reload (issue #14).
+fetch(`${API}/api/dashboard/active`).then(r => r.json()).then(d => {
+  if (d && d.url) loadInDashboard(d.url);
+}).catch(() => {});

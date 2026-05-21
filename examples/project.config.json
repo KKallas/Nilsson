@@ -1,5 +1,10 @@
 {
-  "_comment": "Example .nilsson/config.json `project` descriptor (issue #9). Copy the `project` block into your project's .nilsson/config.json to replace the default. When this block is absent, Nilsson auto-defaults to the bundled minesweeper at examples/minesweeper/ (so a fresh boot serves a working game on :7700 — replace by adding the block below). Pick a `port` that is NOT Nilsson's port — the run_local workflow refuses on collision.",
+  "_comment": "Example .nilsson/config.json `project` descriptor + startup block (issue #9). Copy the `project` block into your project's .nilsson/config.json to replace the default. When this block is absent, Nilsson auto-defaults to the bundled minesweeper at examples/minesweeper/ (so a fresh boot serves a working game on :7700 — replace by adding the block below). Pick a `port` that is NOT Nilsson's port — the run_local workflow refuses on collision.",
+
+  "_startup_comment": "startup.autostart is the list of workflows Nilsson kicks off on boot. Default (when this key is absent and a project is loadable) is [run_local, show_dashboard] — server up + dashboard view embedded. Set explicitly to override; set to [] to opt out entirely.",
+  "startup": {
+    "autostart": ["run_local", "show_dashboard"]
+  },
 
   "project": {
     "start": ["python", "app.py"],

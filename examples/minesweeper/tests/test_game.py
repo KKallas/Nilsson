@@ -55,12 +55,15 @@ ok("powerups placed", len(pcells) == 3)
 ok("powerups on empty safe cells",
    all(not g.grid[r][c].mine and g.grid[r][c].adj == 0 for r, c in pcells))
 
-# pending + opponent veto
+# pending + cancel (anyone can cancel any pending — self-cancel + veto)
 r, c = safe0(g)
 g.click("A", r, c)
 ok("click creates pending", (r, c) in g.pending and g.pending[(r, c)]["by"] == "A")
 g.click("A", r, c)
-ok("cannot veto own pending", (r, c) in g.pending)
+ok("self-cancel aborts (A clicks own pending)",
+   (r, c) not in g.pending and (r, c) not in g.revealed)
+g.click("A", r, c)                                  # re-arm pending
+ok("pending re-created", (r, c) in g.pending)
 g.click("B", r, c)
 ok("opponent veto aborts", (r, c) not in g.pending and (r, c) not in g.revealed)
 
@@ -123,6 +126,98 @@ for rr in range(g7.h):
             g7.revealed.add((rr, cc))
 g7._check_clear()
 ok("all safe revealed ends match", g7.status == "over")
+
+
+# --- single-player support -------------------------------------------
+def solo():
+    g = Game(8, 8, 10, powerups=3, seed=42)
+    g.add_player("A", "Alice")
+    return g
+
+
+s = solo()
+ok("solo: one player → playing", s.status == "playing" and s.is_solo())
+ok("solo: starts immediately (not 'waiting')", s.status != "waiting")
+
+# Solo uses the same 5s pending mechanic as multi (no fast-path); the
+# player can self-cancel (no opponent is around to do it).
+s = solo()
+r, c = safe0(s)
+s.click("A", r, c)
+ok("solo click creates pending (5s mechanic always on)",
+   (r, c) in s.pending and s.pending[(r, c)]["by"] == "A")
+ok("solo click does not reveal immediately", (r, c) not in s.revealed)
+s.click("A", r, c)
+ok("solo self-cancel aborts the pending",
+   (r, c) not in s.pending and (r, c) not in s.revealed)
+
+# When the pending resolves (server timer fires), behavior matches multi:
+# safe → reveal/flood; mine → sudden death (solo loss).
+s = solo()
+r, c = safe0(s)
+s.click("A", r, c)
+s.resolve_pending(r, c)
+ok("solo resolve reveals on safe", (r, c) in s.revealed)
+ok("solo resolve floods (0-cell)", len(s.revealed) > 1)
+
+s = solo()
+mr, mc = mines(s)[0]
+s.click("A", mr, mc)
+ok("solo mine click also pends (no fast-path)",
+   (mr, mc) in s.pending)
+s.resolve_pending(mr, mc)
+ok("solo mine resolve → game over", s.status == "over")
+ok("solo mine resolve → no winner (UI shows 'You lose')",
+   s.winner is None)
+
+# Solo board clear is a win, not a draw.
+s = solo()
+for rr in range(s.h):
+    for cc in range(s.w):
+        if not s.grid[rr][cc].mine:
+            s.revealed.add((rr, cc))
+s._check_clear()
+ok("solo board-clear → winner is the player",
+   s.status == "over" and s.winner == "A")
+
+# A 2nd player joining mid-game changes nothing about the cancel rule
+# (it's symmetric in both modes); they just have an additional canceller.
+s = solo()
+s.add_player("B", "Bob")
+ok("2nd player joins mid-game: still playing", s.status == "playing")
+ok("2nd player joins mid-game: no longer solo", not s.is_solo())
+
+
+# --- new_match: "🔁 New game" button when the round is over ----------
+g = fresh()
+ok("new_match no-op mid-game (returns False)", g.new_match() is False)
+ok("mid-game state untouched", g.status == "playing")
+
+# End the game by sudden death, then reset.
+g = fresh()
+mr, mc = mines(g)[0]
+g.click("A", mr, mc)
+g.resolve_pending(mr, mc)
+ok("setup: game over after mine", g.status == "over")
+ok("new_match after over (returns True)", g.new_match() is True)
+ok("new_match → status back to playing", g.status == "playing")
+ok("new_match → winner cleared", g.winner is None)
+ok("new_match keeps players seated",
+   set(g.players.keys()) == {"A", "B"})
+ok("new_match clears flags/revealed/pending",
+   len(g.flags) == 0 and len(g.revealed) == 0 and len(g.pending) == 0)
+ok("new_match keeps board dimensions",
+   g.w == 8 and g.h == 8 and g.n_mines == 10)
+
+# Solo: new_match after a solo loss starts a fresh solo round.
+s = solo()
+mr, mc = mines(s)[0]
+s.click("A", mr, mc)
+s.resolve_pending(mr, mc)                           # 5s timer fires (no veto)
+ok("solo over before new_match", s.status == "over")
+ok("solo new_match works", s.new_match() and s.status == "playing")
+ok("solo new_match still solo", s.is_solo())
+
 
 if fails:
     print(f"\n{len(fails)} failed: {fails}")

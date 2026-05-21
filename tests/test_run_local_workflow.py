@@ -125,6 +125,40 @@ try:
     ok("step_2 dead pid -> cleaned",
        r["ok"] and "not running" in r["output"]
        and not (d / ".nilsson" / "run_local.json").exists())
+
+    # --- Fix B: reconnect to a live previous run instead of Popening again
+    # Use sys.executable for the actual command (`python` isn't always on
+    # PATH on macOS) — `<py> -V` exits immediately, safe to invoke.
+
+    # Live pid + matching start → reuse path (no new subprocess; pause
+    # marked "reused"). We point at our own pid (definitely alive) and
+    # match `start` exactly so the spec-check passes.
+    spec_start = [sys.executable, "-V"]
+    d = with_dir({"project": {"start": spec_start, "port": 12321}})
+    point_project_at(d)
+    os.chdir(d)
+    (d / ".nilsson").mkdir(parents=True, exist_ok=True)
+    (d / ".nilsson" / "run_local.json").write_text(json.dumps({
+        "pid": os.getpid(), "url": "http://1.2.3.4:12321",
+        "port": 12321, "start": spec_start,
+    }))
+    r = step1.run({})
+    ok("Fix B: live pid + matching start -> reuse",
+       r.get("pause") and "reused" in r.get("output", ""))
+
+    # Live pid but mismatching `start` (different project configured since)
+    # → don't reuse; fall through to Popen with the current spec.start.
+    d = with_dir({"project": {"start": spec_start, "port": 12322}})
+    point_project_at(d)
+    os.chdir(d)
+    (d / ".nilsson").mkdir(parents=True, exist_ok=True)
+    (d / ".nilsson" / "run_local.json").write_text(json.dumps({
+        "pid": os.getpid(), "url": "http://x",
+        "port": 12322, "start": ["different", "command"],
+    }))
+    r = step1.run({})
+    ok("Fix B: live pid + different start -> don't reuse",
+       r.get("pause") and "reused" not in r.get("output", ""))
 finally:
     os.chdir(orig_cwd)
     _paths.PROJECT_DIR = _orig_project_dir

@@ -48,11 +48,21 @@ def _read_session() -> dict | None:
 
 
 def build_widget_html(url: str, title: str) -> str:
-    """Self-contained dashboard widget — iframe + refresh button.
+    """Self-contained dashboard widget — iframe + Refresh button + Fix A
+    wait-for-ready overlay.
 
     Same-browser-context cross-origin embed (parent on Nilsson's port,
     iframe on the project's port) just works for embedding; cookies/state
-    scope correctly to the project origin."""
+    scope correctly to the project origin.
+
+    Fix A (issue #9 follow-up): on first paint the project server may
+    still be cold-starting (Python interp + fastapi/uvicorn imports take
+    ~1-3s). A bare iframe would show "site can't be reached" until the
+    browser eventually retried. Instead we probe the URL with
+    ``fetch(..., {mode:'no-cors'})`` every 200ms and only set the iframe
+    src once we get *any* response (opaque is fine; we just need the
+    socket to be live). After ``timeoutMs`` we fail-open and load the
+    iframe regardless so we never get stuck."""
     u = _html.escape(url, quote=True)
     t = _html.escape(title)
     return (
@@ -69,6 +79,13 @@ def build_widget_html(url: str, title: str) -> str:
         "button:hover{background:#30363d}"
         "iframe{border:0;width:100%;height:calc(100vh - 36px);display:block;"
         "background:#0d1117}"
+        "#wait{position:absolute;inset:36px 0 0 0;display:flex;align-items:"
+        "center;justify-content:center;flex-direction:column;gap:8px;"
+        "background:#0d1117;color:#8b949e;font-size:14px}"
+        "#wait.gone{display:none}"
+        ".dot{width:8px;height:8px;border-radius:50%;background:#58a6ff;"
+        "animation:pulse 1s ease-in-out infinite}"
+        "@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}"
         "</style></head><body>"
         "<div id=\"bar\">"
         f"<span>▶ {t}</span>"
@@ -77,7 +94,26 @@ def build_widget_html(url: str, title: str) -> str:
         "<button onclick=\"var f=document.getElementById('f');f.src=f.src\">"
         "Refresh</button>"
         "</div>"
-        f"<iframe id=\"f\" src=\"{u}\"></iframe>"
+        "<div id=\"wait\"><div class=\"dot\"></div>"
+        f"<div>Starting project server… ({u})</div></div>"
+        f"<iframe id=\"f\"></iframe>"
+        "<script>"
+        f"(function(){{var url={json.dumps(url)};"
+        "var f=document.getElementById('f');"
+        "var w=document.getElementById('wait');"
+        "var t0=Date.now(),timeoutMs=8000;"
+        "function show(){f.src=url;w.classList.add('gone');}"
+        "function probe(){"
+        "fetch(url,{mode:'no-cors',cache:'no-store'})"
+        ".then(show)"
+        ".catch(function(){"
+        "if(Date.now()-t0>timeoutMs){show();}"
+        "else{setTimeout(probe,200);}"
+        "});"
+        "}"
+        "probe();"
+        "}());"
+        "</script>"
         "</body></html>\n"
     )
 
