@@ -77,6 +77,7 @@ function render(){
     (S.winner===S.you ? '🏆 You win!' : '💥 You lose.');
   else if(S.armed) bar = `Power-up armed (${S.powerup_names[S.armed]}) — your next tap uses it.`;
   else if(flagMode) bar = 'FLAG mode — tap a box to flag/unflag (instant, final).';
+  else if(S.players.length < 2) bar = 'Solo — opens are instant. Share the QR for a 2nd player to enable the 5s veto.';
   else bar = 'Tap a box to open (5s; opponent can tap it to cancel).';
   document.getElementById('bar').textContent = bar;
   const fb = document.getElementById('flagbtn');

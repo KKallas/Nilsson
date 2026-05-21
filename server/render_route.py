@@ -60,22 +60,19 @@ async def _lifespan(app):
         start_watcher()
     except Exception as exc:
         print(f"[render] tool watcher start failed: {exc}", file=sys.stderr)
-    # Startup: auto-start the project server (the run_local workflow) when a
-    # project is configured — or, by default, when the bundled minesweeper
-    # is present. "Minesweeper is always there as the first thing you can
-    # replace": auto_default in the descriptor helper synthesizes a spec
-    # pointing at examples/minesweeper/, so a fresh Nilsson boots straight
-    # into a working example. Stop via the queue any time; replace via
-    # .nilsson/config.json `project`.
+    # Startup: autostart the configured workflows. List comes from
+    # tools/nilsson/_autostart.py — reads `startup.autostart` from
+    # .nilsson/config.json (an explicit list, including [] to opt out),
+    # falling back to [run_local, show_dashboard] when a project is
+    # loadable. Replaces the previous hard-coded "always start run_local"
+    # so orchestration stays declarative in config, not in core.
     try:
-        from tools.nilsson._project_server import load_project_server
-        res = load_project_server()                              # auto_default=True
-        if res.ok and not res.spec.is_remote:
-            import workflows
-            workflows.start("run_local")
+        from tools.nilsson._autostart import compute_autostart
+        import workflows
+        for _wf_name in compute_autostart():
+            workflows.start(_wf_name)
     except Exception as exc:
-        print(f"[render] auto-start project server failed: {exc}",
-              file=sys.stderr)
+        print(f"[render] autostart failed: {exc}", file=sys.stderr)
     yield
 
 app = FastAPI(title="Nilsson Render Server", docs_url=None, redoc_url=None, lifespan=_lifespan)

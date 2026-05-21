@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import socket
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -37,29 +35,43 @@ def _fail(msg: str) -> dict:
     return {"ok": False, "error": msg, "output": msg}
 
 
-def _embed_in_dashboard(nilsson_port: int, title: str = "Project") -> str | None:
-    """Push an iframe widget pointing at the project URL to the dashboard.
-
-    Defensive: failures (missing render tool, subprocess error, no parseable
-    output) downgrade silently to None — the project still runs; the queue
-    popup just won't have a one-click "Open in dashboard" link. The agent
-    can always invoke the render tool manually later (issue #14)."""
+def _pid_alive(pid: int) -> bool:
+    """True if the process exists (signal 0 = liveness probe, no signal sent)."""
     try:
-        from server.paths import NILSSON_DIR
-        embed = NILSSON_DIR / "tools" / "render" / "embed_project.py"
-        if not embed.exists():
-            return None
-        proc = subprocess.run(
-            [sys.executable, str(embed), "--port", str(nilsson_port),
-             "--title", title],
-            capture_output=True, text=True, timeout=10,
-        )
-        if proc.returncode != 0:
-            return None
-        m = re.search(r"\[Open in dashboard\]\(([^)]+)\)", proc.stdout)
-        return m.group(1) if m else None
-    except Exception:
+        os.kill(pid, 0)
+        return True
+    except (ProcessLookupError, PermissionError):
+        return False
+    except OSError:
+        return False
+
+
+def _reuse_existing(spec) -> dict | None:
+    """Issue #9 Fix B: if a previous Nilsson run left a project server
+    alive (orphaned child — children survive parent exit by default on
+    POSIX), reconnect to it instead of spawning a duplicate.
+
+    Returns a ready-to-return pause dict on reuse, or None to fall through
+    to a fresh ``Popen``. Stale markers (pid is dead) are cleaned here so
+    the next step starts from a clean slate."""
+    if not SESSION_FILE.exists():
         return None
+    try:
+        sess = json.loads(SESSION_FILE.read_text())
+    except (OSError, json.JSONDecodeError):
+        SESSION_FILE.unlink(missing_ok=True)
+        return None
+    pid = sess.get("pid")
+    if not isinstance(pid, int) or not _pid_alive(pid):
+        SESSION_FILE.unlink(missing_ok=True)
+        return None
+    # Sanity-check: the running pid's recorded `start` should match the
+    # current descriptor's `start`. If a different project has been
+    # configured in the meantime, the stale subprocess isn't ours to reuse.
+    if sess.get("start") != list(spec.start):
+        return None
+    url = sess.get("url") or ""
+    return _pause_result(spec, pid, url, reused=True)
 
 
 def run(context):
@@ -86,6 +98,13 @@ def run(context):
                      f"Nilsson's port {nilsson_port}. Pick a different port "
                      "for the project server in .nilsson/config.json.")
 
+    # Issue #9 Fix B: reconnect to an orphaned previous run rather than
+    # double-spawning. If the marker points at a dead pid it gets cleaned
+    # here and we fall through to a fresh Popen.
+    reused = _reuse_existing(spec)
+    if reused is not None:
+        return reused
+
     proj_dir = Path(os.environ.get("NILSSON_PROJECT_DIR", str(Path.cwd())))
 
     try:
@@ -105,21 +124,22 @@ def run(context):
         "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }, indent=2))
 
-    # Issue #14: auto-embed the served project in the dashboard so LLM-driven
-    # iteration shows up right next to the chat. Best-effort; the workflow
-    # itself doesn't fail if the embed step does.
-    dashboard_url = _embed_in_dashboard(nilsson_port, "Project")
-    dashboard_btn = ""
-    if dashboard_url:
-        dashboard_btn = (
-            f"<p style=\"margin:8px 0 12px;\"><a href=\"#\" "
-            f"onclick=\"event.preventDefault();loadInDashboard('{dashboard_url}')\" "
-            "style=\"display:inline-block;padding:8px 20px;background:#21262d;"
-            "color:#c9d1d9;border:1px solid #30363d;border-radius:6px;"
-            "text-decoration:none;font-weight:600;font-size:14px;\">"
-            "View in dashboard</a></p>"
-        )
+    # Embedding the served project in the dashboard is the `show_dashboard`
+    # workflow's job now (autostart it alongside this one). Keeps each
+    # workflow doing one thing.
+    return _pause_result(spec, proc.pid, url, reused=False)
 
+
+def _pause_result(spec, pid: int, url: str, *, reused: bool) -> dict:
+    """The pause-with-Stop dict — shared by fresh-launch and Fix-B reuse."""
+    reused_note = ""
+    if reused:
+        reused_note = (
+            "<p style=\"font-size:13px;color:#3fb950;\">"
+            "Reconnected to an existing process from a previous Nilsson "
+            "session (pid alive)."
+            "</p>"
+        )
     return {
         "ok": True,
         "pause": True,
@@ -127,15 +147,18 @@ def run(context):
         "detail_html": (
             "<h3>Project server running</h3>"
             f"<p>Launched with: <code>{' '.join(spec.start)}</code> "
-            f"(pid {proc.pid}).</p>"
+            f"(pid {pid}).</p>"
             f"<p style=\"margin:12px 0;\"><a href=\"{url}\" target=\"_blank\" "
             "style=\"display:inline-block;padding:8px 20px;background:#58a6ff;"
             "color:#fff;border-radius:6px;text-decoration:none;"
             f"font-weight:600;font-size:14px;\">Open {url}</a></p>"
-            f"{dashboard_btn}"
+            f"{reused_note}"
             "<p style=\"font-size:13px;color:#8b949e;\">Nilsson stays on its "
-            "own port (loopback). Click <b>Stop</b> to terminate.</p>"
+            "own port (loopback). Click <b>Stop</b> to terminate. "
+            "Run <code>show_dashboard</code> to embed this page in the "
+            "dashboard alongside the chat.</p>"
         ),
         "actions": [{"label": "Stop", "action": "continue"}],
-        "output": f"Project server pid={proc.pid} at {url}",
+        "output": f"Project server pid={pid} at {url}"
+                  + (" (reused)" if reused else ""),
     }

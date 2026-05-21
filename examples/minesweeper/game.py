@@ -84,15 +84,24 @@ class Game:
             self.grid[r][c].powerup = (BOOM, MARK, FLIP)[i % 3]
 
     def add_player(self, pid: str, name: str) -> bool:
-        """Seat a player (max 2). Match starts when the 2nd joins."""
+        """Seat a player (max 2). Solo-friendly: the match starts as soon
+        as the first player joins so you don't have to wait for an
+        opponent to play. A second player can drop in mid-game; the 5s
+        veto mechanic activates for opens placed after they join."""
         if pid in self.players:
             return True
         if len(self.players) >= 2:
             return False
         self.players[pid] = Player(pid, name)
-        if len(self.players) == 2:
+        if self.status == "waiting":
             self.status = "playing"
         return True
+
+    def is_solo(self) -> bool:
+        """True while only one player is seated. With no opponent there's
+        nobody to veto an open, so solo clicks resolve immediately —
+        otherwise every click would dead-air for 5s."""
+        return len(self.players) == 1
 
     def _other(self, pid: str) -> str | None:
         for q in self.players:
@@ -124,6 +133,16 @@ class Game:
                 del self.pending[key]            # abort, no score
             return
         if key in self.revealed or key in self.flags:
+            return
+        if self.is_solo():
+            # No opponent → no possible veto → no point waiting 5s.
+            # Resolve inline (sudden death on mine, flood-reveal otherwise).
+            if self.grid[r][c].mine:
+                self.status = "over"
+                self.winner = None                  # solo loss; UI: "You lose"
+            else:
+                self._open(pid, r, c)
+                self._check_clear()
             return
         self.pending[key] = {"by": pid, "deadline": time.time() + PENDING_SECONDS}
 
@@ -207,7 +226,9 @@ class Game:
                             if o == q and self.grid[fr][fc].mine)
         self.status = "over"
         ps = list(self.players.values())
-        if len(ps) == 2 and ps[0].score != ps[1].score:
+        if len(ps) == 1:
+            self.winner = ps[0].pid                # solo board-clear = win
+        elif len(ps) == 2 and ps[0].score != ps[1].score:
             self.winner = max(ps, key=lambda x: x.score).pid
         else:
             self.winner = "draw"

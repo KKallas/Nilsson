@@ -91,8 +91,13 @@ try:
     ok("happy → artifact written", len(artifacts) == 1)
     if artifacts:
         html = artifacts[0].read_text()
-        ok("happy → iframe src is session URL",
-           f'src="{sess_url}"' in html)
+        # Fix A: iframe starts WITHOUT src — set after fetch-probe succeeds.
+        ok("happy → iframe src starts empty (Fix A wait-for-ready)",
+           '<iframe id="f"></iframe>' in html)
+        ok("happy → JS probe carries the session URL",
+           f'{sess_url}' in html and "probe" in html)
+        ok("happy → wait overlay present",
+           '#wait' in html and "Starting project server" in html)
         ok("happy → has Refresh button", "Refresh" in html and "f.src" in html)
         ok("happy → title escaped + present", "TestProject" in html)
         ok("happy → link printed points at the artifact",

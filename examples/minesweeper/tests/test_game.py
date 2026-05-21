@@ -124,6 +124,55 @@ for rr in range(g7.h):
 g7._check_clear()
 ok("all safe revealed ends match", g7.status == "over")
 
+
+# --- single-player support -------------------------------------------
+def solo():
+    g = Game(8, 8, 10, powerups=3, seed=42)
+    g.add_player("A", "Alice")
+    return g
+
+
+s = solo()
+ok("solo: one player → playing", s.status == "playing" and s.is_solo())
+ok("solo: starts immediately (not 'waiting')", s.status != "waiting")
+
+# Solo click on a known-safe cell resolves inline (no pending, no 5s wait).
+s = solo()
+r, c = safe0(s)
+s.click("A", r, c)
+ok("solo safe click reveals inline", (r, c) in s.revealed)
+ok("solo safe click creates no pending", (r, c) not in s.pending)
+ok("solo safe click can flood (0-cell)", len(s.revealed) > 1)
+
+# Solo click on a mine = sudden death (the only player loses).
+s = solo()
+mr, mc = mines(s)[0]
+s.click("A", mr, mc)
+ok("solo mine click → game over", s.status == "over")
+ok("solo mine click → no winner (UI shows 'You lose')", s.winner is None)
+ok("solo mine click never pends", (mr, mc) not in s.pending)
+
+# Solo board clear is a win, not a draw.
+s = solo()
+for rr in range(s.h):
+    for cc in range(s.w):
+        if not s.grid[rr][cc].mine:
+            s.revealed.add((rr, cc))
+s._check_clear()
+ok("solo board-clear → winner is the player",
+   s.status == "over" and s.winner == "A")
+
+# A 2nd player joining mid-game restores the 5s veto mechanic for new opens.
+s = solo()
+s.add_player("B", "Bob")
+ok("2nd player joins mid-game: still playing", s.status == "playing")
+ok("2nd player joins mid-game: no longer solo", not s.is_solo())
+r, c = safe0(s)
+s.click("A", r, c)
+ok("post-2nd-player click creates pending (veto mode back)",
+   (r, c) in s.pending)
+
+
 if fails:
     print(f"\n{len(fails)} failed: {fails}")
     sys.exit(1)
