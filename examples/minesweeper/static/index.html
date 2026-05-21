@@ -89,8 +89,10 @@ function render(){
   const fb = document.getElementById('flagbtn');
   fb.textContent = '🚩 Flag mode: ' + (flagMode ? 'ON' : 'OFF');
   fb.className = flagMode ? 'on' : '';
+  // NOTE: must set 'block' (not '') — '' clears the inline style and the
+  // CSS `#newgame{display:none}` rule takes over, so the button stays hidden.
   document.getElementById('newgame').style.display =
-    (S.status === 'over') ? '' : 'none';
+    (S.status === 'over') ? 'block' : 'none';
   // power-ups
   const counts = {};
   S.powerups.forEach(k => counts[k]=(counts[k]||0)+1);
